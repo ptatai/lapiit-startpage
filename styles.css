@@ -1,4 +1,7 @@
 :root {
+  color-scheme: dark;
+  --select-popup-bg: #151b22;
+  --select-popup-text: #f5f7fa;
   --bg-a: #25232b;
   --bg-b: #111a24;
   --bg-c: #061019;
@@ -17,22 +20,10 @@
   --radius: 20px;
 }
 
-body[data-theme="forest"] {
-  --bg-a: #1b2a24; --bg-b: #0f201b; --bg-c: #06110d;
-  --mountain-a: #0b1a14; --mountain-b: #04100b;
-  --accent: #70c887;
-}
-body[data-theme="aurora"] {
-  --bg-a: #211e35; --bg-b: #13263b; --bg-c: #071019;
-  --mountain-a: #101827; --mountain-b: #050a11;
-  --accent: #6fd1d8;
-}
-body[data-theme="warm"] {
-  --bg-a: #38251f; --bg-b: #211815; --bg-c: #100b09;
-  --mountain-a: #1b100c; --mountain-b: #0b0605;
-  --accent: #e0a561;
-}
 body[data-theme="light"] {
+  color-scheme: light;
+  --select-popup-bg: #ffffff;
+  --select-popup-text: #17212b;
   --bg-a: #e9edf3; --bg-b: #dfe7ef; --bg-c: #ccd8e5;
   --mountain-a: #a8b9ca; --mountain-b: #90a2b5;
   --panel: rgba(255,255,255,var(--panel-alpha));
@@ -55,6 +46,26 @@ body {
 
 button, input, select { font: inherit; }
 button { color: inherit; }
+
+/* Native <select> popups on Windows/Chromium/Firefox need explicit
+   theme colors; otherwise a dark-theme select can open a white popup
+   with nearly-white option text. */
+select {
+  color-scheme: dark;
+}
+select option,
+select optgroup {
+  background-color: var(--select-popup-bg);
+  color: var(--select-popup-text);
+}
+body[data-theme="light"] select {
+  color-scheme: light;
+}
+body[data-theme="light"] select option,
+body[data-theme="light"] select optgroup {
+  background-color: #ffffff;
+  color: #17212b;
+}
 
 
 
@@ -685,3 +696,223 @@ body[data-density="compact"] .timer-wrap{min-height:195px}
   .vio-hero{flex-direction:column;padding:18px}
   .section-heading{display:block}
 }
+
+/* ==========================================================
+   V5.3 CLEANUP
+   - Dark / Light UI only
+   - flex-based adaptive dashboard: no empty reserved columns
+   - stronger light-theme contrast
+   ========================================================== */
+
+/* A flex dashboard adapts to the number of visible widgets.
+   If only 1/2/3 cards remain, they automatically grow to fill the row. */
+.dashboard {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: stretch;
+}
+
+.dashboard > .card {
+  flex: 1 1 310px;
+  min-width: min(100%, 280px);
+  grid-column: auto;
+  min-height: 0;
+}
+
+.dashboard > .currencies-card {
+  flex: 1 0 100%;
+  width: 100%;
+}
+
+/* Internal collections also fill the available width dynamically. */
+.currency-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+  gap: 14px;
+}
+
+.quick-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 105px), 1fr));
+  gap: 12px;
+}
+
+.card-inner {
+  width: 100%;
+}
+
+/* Dark UI: explicit native-control palette. */
+body[data-theme="midnight"] {
+  color-scheme: dark;
+  --select-popup-bg: #151b22;
+  --select-popup-text: #f5f7fa;
+}
+
+/* Light UI: complete contrast pass. */
+body[data-theme="light"] {
+  color-scheme: light;
+  --select-popup-bg: #ffffff;
+  --select-popup-text: #17212b;
+  --panel: rgba(255,255,255,var(--panel-alpha));
+  --panel-2: rgba(248,250,252,calc(var(--panel-alpha) - .03));
+  --panel-solid: #ffffff;
+  --border: rgba(29,47,64,.20);
+  --border-strong: rgba(29,47,64,.34);
+  --text: #17212b;
+  --muted: #526372;
+  --input-bg: rgba(242,246,249,.96);
+  --accent: #267a4d;
+  --accent-soft: rgba(38,122,77,.14);
+  --danger: #a93642;
+}
+
+body[data-theme="light"] .card,
+body[data-theme="light"] .search-shell,
+body[data-theme="light"] .profile-tabs,
+body[data-theme="light"] .vio-section,
+body[data-theme="light"] .vio-time-card,
+body[data-theme="light"] .vio-hero {
+  border-color: var(--border);
+}
+
+body[data-theme="light"] input::placeholder {
+  color: #788793;
+  opacity: 1;
+}
+
+body[data-theme="light"] .segmented {
+  background: #eef3f6;
+  border-color: var(--border);
+}
+
+body[data-theme="light"] .segmented button {
+  color: #526372;
+}
+
+body[data-theme="light"] .segmented button.active {
+  color: #17212b;
+  background: rgba(38,122,77,.16);
+}
+
+body[data-theme="light"] .icon-btn,
+body[data-theme="light"] .parent-lock,
+body[data-theme="light"] .quick-add,
+body[data-theme="light"] .timer-buttons button,
+body[data-theme="light"] .player-heading button {
+  border-color: var(--border-strong);
+}
+
+body[data-theme="light"] .quick-icon {
+  border: 1px solid rgba(29,47,64,.10);
+}
+
+body[data-theme="light"] .currency-change,
+body[data-theme="light"] .currency-value,
+body[data-theme="light"] .currency-converted strong {
+  color: var(--accent);
+}
+
+body[data-theme="light"] .currency-change.down {
+  color: var(--danger);
+}
+
+body[data-theme="light"] select,
+body[data-theme="light"] select option,
+body[data-theme="light"] select optgroup {
+  color-scheme: light;
+  background-color: #ffffff;
+  color: #17212b;
+}
+
+@media (max-width: 700px) {
+  .dashboard {
+    display: block;
+  }
+
+  .dashboard > .card {
+    width: 100%;
+    min-width: 0;
+    margin-bottom: 14px;
+  }
+
+  .currency-grid,
+  .quick-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ==========================================================
+   V5.4 – DEVIZA WIDGET MÉRETEZÉS
+   ========================================================== */
+
+/* A V5.3 teljes szélességű devizakártya-szabályának felülírása. */
+.dashboard > .currencies-card {
+  width: auto;
+  min-width: min(100%, 300px);
+}
+
+/* AUTO:
+   1 deviza -> időjárás méretéhez közeli
+   2 deviza -> közepes, ha van hely az időjárás mellé is beférhet
+   3 deviza -> nagy / teljes sor */
+.dashboard > .currencies-card[data-currency-size="auto"][data-currency-count="1"] {
+  flex: 1 1 340px;
+  max-width: 520px;
+}
+
+.dashboard > .currencies-card[data-currency-size="auto"][data-currency-count="2"] {
+  flex: 2 1 650px;
+  max-width: 900px;
+}
+
+.dashboard > .currencies-card[data-currency-size="auto"][data-currency-count="3"] {
+  flex: 1 0 100%;
+  max-width: none;
+}
+
+/* Kézi méretek */
+.dashboard > .currencies-card[data-currency-size="small"] {
+  flex: 1 1 340px;
+  max-width: 520px;
+}
+
+.dashboard > .currencies-card[data-currency-size="medium"] {
+  flex: 2 1 650px;
+  max-width: 920px;
+}
+
+.dashboard > .currencies-card[data-currency-size="full"] {
+  flex: 1 0 100%;
+  max-width: none;
+}
+
+/* A devizakártyák a külső widget méretéhez is alkalmazkodnak. */
+.currencies-card[data-currency-size="small"] .currency-grid,
+.currencies-card[data-currency-size="auto"][data-currency-count="1"] .currency-grid {
+  grid-template-columns: 1fr;
+}
+
+.currencies-card[data-currency-size="medium"] .currency-grid,
+.currencies-card[data-currency-size="auto"][data-currency-count="2"] .currency-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+}
+
+@media (max-width: 900px) {
+  .dashboard > .currencies-card,
+  .dashboard > .currencies-card[data-currency-size="auto"],
+  .dashboard > .currencies-card[data-currency-size="small"],
+  .dashboard > .currencies-card[data-currency-size="medium"],
+  .dashboard > .currencies-card[data-currency-size="full"] {
+    flex: 1 1 100%;
+    max-width: none;
+    width: 100%;
+  }
+}
+
+@media (max-width: 700px) {
+  .currencies-card .currency-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
