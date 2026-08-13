@@ -1153,3 +1153,42 @@ body[data-theme="light"] .search-shell select optgroup {
   color: #f2f6f9 !important;
 }
 
+/* ==========================================================
+   V5.5.2 HOTFIX
+   Keresőmotor-select: natív Windows/böngésző megjelenés kikapcsolva.
+   Így Light témában sem tud fehér mezőként kirajzolódni.
+   ========================================================== */
+.search-shell select,
+body[data-theme="light"] .search-shell select {
+  -webkit-appearance: none !important;
+  appearance: none !important;
+
+  background-color: transparent !important;
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--chrome-muted) 50%),
+    linear-gradient(135deg, var(--chrome-muted) 50%, transparent 50%) !important;
+  background-position:
+    calc(100% - 17px) 24px,
+    calc(100% - 12px) 24px !important;
+  background-size: 5px 5px, 5px 5px !important;
+  background-repeat: no-repeat !important;
+
+  color: var(--chrome-text) !important;
+  border-radius: 0 !important;
+  padding-right: 32px !important;
+  color-scheme: dark !important;
+}
+
+.search-shell select:focus,
+body[data-theme="light"] .search-shell select:focus {
+  background-color: rgba(255,255,255,.035) !important;
+}
+
+.search-shell select option,
+.search-shell select optgroup,
+body[data-theme="light"] .search-shell select option,
+body[data-theme="light"] .search-shell select optgroup {
+  background: #111920 !important;
+  color: #f2f6f9 !important;
+}
+

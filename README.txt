@@ -89,3 +89,11 @@ V5.5.1 HOTFIX
 - Javítva a Light témában kifehéredő keresőmotor-választó.
 - A keresősáv dropdownja mindig a sötét háttéradaptív fejlécpalettát használja.
 - Más funkció és elrendezés nem változott.
+
+
+V5.5.2 HOTFIX
+- A keresőmotor-választón kikapcsoltuk a natív select-megjelenést.
+- Saját, sötét keresősávba illő nyíl került rá.
+- Light témában sem rajzolhatja ki a böngésző fehér vezérlőként.
+- A lenyíló opciólista továbbra is sötét és jól olvasható.
+- Más funkció nem változott.
