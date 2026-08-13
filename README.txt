@@ -83,3 +83,9 @@ V5.5 POLISH
 TESZT
 Ez legyen az 1–2 hetes tesztverzió. A teszt alatt új funkció helyett csak a használat közben
 előjövő hibákat és kényelmetlenségeket érdemes gyűjteni.
+
+
+V5.5.1 HOTFIX
+- Javítva a Light témában kifehéredő keresőmotor-választó.
+- A keresősáv dropdownja mindig a sötét háttéradaptív fejlécpalettát használja.
+- Más funkció és elrendezés nem változott.

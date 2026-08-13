@@ -1133,3 +1133,23 @@ body[data-theme="light"] .search-shell select option {
   }
 }
 
+/* ==========================================================
+   V5.5.1 HOTFIX
+   A Light téma általános select szabálya ne tegye fehérré
+   a sötét, háttéradaptív keresőmotor-választót.
+   ========================================================== */
+.search-shell select,
+body[data-theme="light"] .search-shell select {
+  background-color: transparent !important;
+  color: var(--chrome-text) !important;
+  color-scheme: dark;
+}
+
+.search-shell select option,
+.search-shell select optgroup,
+body[data-theme="light"] .search-shell select option,
+body[data-theme="light"] .search-shell select optgroup {
+  background-color: #111920 !important;
+  color: #f2f6f9 !important;
+}
+
