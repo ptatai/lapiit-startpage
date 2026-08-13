@@ -1,4 +1,4 @@
-LAPIIT STARTPAGE – V5.4 TEST CANDIDATE
+LAPIIT STARTPAGE – V5.5 POLISH / TEST CANDIDATE
 
 CÉL
 Ez a verzió feature freeze előtti rendrakás. Új nagy funkció nincs benne:
@@ -66,3 +66,20 @@ V5.4 – DEVIZA ELRENDEZÉS
 - A devizák számának módosításakor a méret azonnal újraszámolódik.
 - Kisebb ablaknál a widget automatikusan teljes szélességre törik, így nem szorul össze.
 - Ez legyen az 1–2 hetes tesztverzió; új funkciót ezután nem teszünk bele a teszt végéig.
+
+
+V5.5 POLISH
+- A Vio jóváhagyott YouTube-videói valódi YouTube-borítóképpel jelennek meg.
+- Egy videókártyára kattintva ugyanaz a beágyazott YouTube-lejátszó vált át az új videóra.
+- A lejátszót nem építi újra minden váltásnál; ha már létezik, loadVideoById váltást használ.
+- Az aktív videó kártyája kiemelést kap.
+- A napi Vio-idő továbbra is csak a tényleges PLAYING állapot alatt fogy.
+- A felső óra/dátum, profilfülek, kereső és ikongombok háttéradaptív üvegpalettát kaptak.
+- Mountains / Aurora / Stars / Rain / Waves külön finom színezetet kap.
+- Light témánál a tartalmi kártyák világosak maradnak, de a háttéren lebegő felső UI sötét,
+  kontrasztos üvegfelületet használ.
+- A meglévő helyi adatok és Supabase-mentések kompatibilisek.
+
+TESZT
+Ez legyen az 1–2 hetes tesztverzió. A teszt alatt új funkció helyett csak a használat közben
+előjövő hibákat és kényelmetlenségeket érdemes gyűjteni.

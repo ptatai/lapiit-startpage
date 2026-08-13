@@ -141,9 +141,20 @@ const vioLimitMs=()=>Math.max(1,+state.vio.dailyLimitMinutes||15)*60000+(+state.
 const vioRemainingMs=()=>{resetVioDay();return Math.max(0,vioLimitMs()-(+state.vio.usedMs||0))};
 function mmss(ms){const t=Math.ceil(Math.max(0,ms)/1000),m=Math.floor(t/60),s=t%60;return`${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`}
 function extractYouTubeId(url){try{const p=new URL(normalizeUrl(url));if(p.hostname.includes("youtu.be"))return p.pathname.split("/").filter(Boolean)[0]||"";if(p.hostname.includes("youtube.com")){if(p.pathname==="/watch")return p.searchParams.get("v")||"";return p.pathname.match(/\/(?:embed|shorts)\/([^/?]+)/)?.[1]||""}}catch{}return""}
+function youtubeThumb(id){return`https://i.ytimg.com/vi/${encodeURIComponent(id)}/hqdefault.jpg`}
+function markActiveVioVideo(){
+  $$("#vioVideoGrid [data-video-id]").forEach(btn=>{
+    const v=state.vio.videos.find(x=>x.id===btn.dataset.videoId);
+    const active=!!v&&v.youtubeId===vioCurrentVideoId;
+    btn.classList.toggle("active",active);
+    btn.setAttribute("aria-pressed",active?"true":"false");
+  });
+}
 function renderVio(){resetVioDay();const rem=vioRemainingMs(),lim=vioLimitMs(),frac=lim?rem/lim:0;$("#vioRemainingText").textContent=mmss(rem);$("#vioProgressBar").style.width=`${Math.max(0,Math.min(100,frac*100))}%`;$("#vioTimeSummary").textContent=rem>0?`Ma még ${mmss(rem)} videóidő maradt.`:"Mára elfogyott a videóidő.";$("#vioEndCard").hidden=rem>0;$("#vioContent").hidden=rem<=0;if(rem<=0)stopVioPlayback();
-  $("#vioVideoGrid").innerHTML=state.vio.videos.length?state.vio.videos.map(v=>`<button class="vio-tile" type="button" data-video-id="${v.id}"><span class="vio-tile-icon">▶️</span><strong>${esc(v.title)}</strong><span>YouTube videó</span></button>`).join(""):'<div class="vio-empty">Még nincs jóváhagyott videó. A 🔒 Szülő gombnál tudsz hozzáadni.</div>';
-  $("#vioLinkGrid").innerHTML=state.vio.links.length?state.vio.links.map(l=>{let host="weboldal";try{host=new URL(normalizeUrl(l.url)).hostname}catch{}return`<a class="vio-tile" href="${esc(normalizeUrl(l.url))}" target="_blank" rel="noopener noreferrer"><span class="vio-tile-icon">🌈</span><strong>${esc(l.title)}</strong><span>${esc(host)}</span></a>`}).join(""):'<div class="vio-empty">Ide kerülhetnek a kedvenc gyerekoldalak és más jóváhagyott linkek.</div>'}
+  $("#vioVideoGrid").innerHTML=state.vio.videos.length?state.vio.videos.map(v=>`<button class="vio-tile vio-video-tile${v.youtubeId===vioCurrentVideoId?" active":""}" type="button" data-video-id="${v.id}" aria-pressed="${v.youtubeId===vioCurrentVideoId?"true":"false"}"><span class="vio-thumb"><img src="${youtubeThumb(v.youtubeId)}" alt="" loading="lazy" referrerpolicy="no-referrer"><span class="vio-play-badge">▶</span></span><span class="vio-video-copy"><strong>${esc(v.title)}</strong><span>YouTube videó</span></span></button>`).join(""):'<div class="vio-empty">Még nincs jóváhagyott videó. A 🔒 Szülő gombnál tudsz hozzáadni.</div>';
+  $("#vioLinkGrid").innerHTML=state.vio.links.length?state.vio.links.map(l=>{let host="weboldal";try{host=new URL(normalizeUrl(l.url)).hostname}catch{}return`<a class="vio-tile" href="${esc(normalizeUrl(l.url))}" target="_blank" rel="noopener noreferrer"><span class="vio-tile-icon">🌈</span><strong>${esc(l.title)}</strong><span>${esc(host)}</span></a>`}).join(""):'<div class="vio-empty">Ide kerülhetnek a kedvenc gyerekoldalak és más jóváhagyott linkek.</div>';
+  markActiveVioVideo()
+}
 async function hashPin(pin,salt){const d=new TextEncoder().encode(`${salt}:${pin}`),h=await crypto.subtle.digest("SHA-256",d);return[...new Uint8Array(h)].map(b=>b.toString(16).padStart(2,"0")).join("")}
 function openPin(mode,cb=null){pinMode=mode;pinSuccess=cb;$("#pinInput").value="";$("#pinConfirmInput").value="";const setup=mode==="setup"||mode==="change";$("#pinTitle").textContent=setup?(mode==="change"?"Új szülői PIN":"Szülői PIN beállítása"):"Szülői PIN";$("#pinHelp").textContent=setup?"Adj meg egy 4–8 számjegyű PIN-t. A kódban nem tároljuk olvasható formában.":"Add meg a szülői PIN-t.";$("#pinConfirmWrap").hidden=!setup;$("#pinConfirmInput").required=setup;$("#pinDialog").showModal()}
 async function submitPin(){const pin=$("#pinInput").value.trim();if(!/^\d{4,8}$/.test(pin))return toast("A PIN 4–8 számjegy legyen");if(pinMode==="setup"||pinMode==="change"){if(pin!==$("#pinConfirmInput").value.trim())return toast("A két PIN nem egyezik");const salt=crypto.getRandomValues(new Uint32Array(4)).join("-");state.vio.pinSalt=salt;state.vio.pinHash=await hashPin(pin,salt);saveState();$("#pinDialog").close();toast("Szülői PIN mentve");pinSuccess?.();return}if(await hashPin(pin,state.vio.pinSalt||"")!==state.vio.pinHash)return toast("Hibás PIN");$("#pinDialog").close();pinSuccess?.()}
@@ -151,13 +162,43 @@ function parentAccess(cb){state.vio.pinHash?openPin("unlock",cb):openPin("setup"
 function openVioParent(){$("#vioLimitInput").value=state.vio.dailyLimitMinutes;renderVioParentLists();$("#vioParentDialog").showModal()}
 function renderVioParentLists(){$("#vioParentVideoList").innerHTML=state.vio.videos.map(v=>`<div class="parent-list-row"><span>${esc(v.title)}</span><button type="button" data-delete-vio-video="${v.id}">Törlés</button></div>`).join("");$("#vioParentLinkList").innerHTML=state.vio.links.map(l=>`<div class="parent-list-row"><span>${esc(l.title)}</span><button type="button" data-delete-vio-link="${l.id}">Törlés</button></div>`).join("")}
 function loadYouTubeApi(){if(ytApiReady||ytApiLoading)return;ytApiLoading=true;window.onYouTubeIframeAPIReady=()=>{ytApiReady=true;ytApiLoading=false;if(vioCurrentVideoId)createPlayer(vioCurrentVideoId)};const s=document.createElement("script");s.src="https://www.youtube.com/iframe_api";s.async=true;document.head.appendChild(s)}
-function playVioVideo(id){if(vioRemainingMs()<=0)return renderVio();const v=state.vio.videos.find(x=>x.id===id);if(!v)return;$("#vioPlayerTitle").textContent=v.title;$("#vioPlayerShell").hidden=false;vioCurrentVideoId=v.youtubeId;ytApiReady?createPlayer(v.youtubeId):loadYouTubeApi();$("#vioPlayerShell").scrollIntoView({behavior:"smooth",block:"center"})}
-function createPlayer(videoId){if(!window.YT?.Player)return;if(ytPlayer){try{ytPlayer.destroy()}catch{}ytPlayer=null}$("#vioPlayer").innerHTML="";ytPlayer=new YT.Player("vioPlayer",{videoId,playerVars:{playsinline:1,rel:0,modestbranding:1},events:{onStateChange:e=>e.data===YT.PlayerState.PLAYING?startVioUsage():stopVioTicker()}})}
+function playVioVideo(id){
+  if(vioRemainingMs()<=0)return renderVio();
+  const v=state.vio.videos.find(x=>x.id===id);if(!v)return;
+  $("#vioPlayerTitle").textContent=v.title;
+  $("#vioPlayerShell").hidden=false;
+  stopVioTicker();
+  vioCurrentVideoId=v.youtubeId;
+  markActiveVioVideo();
+  if(ytApiReady&&ytPlayer&&typeof ytPlayer.loadVideoById==="function"){
+    try{ytPlayer.loadVideoById(v.youtubeId)}catch{createPlayer(v.youtubeId)}
+  }else if(ytApiReady){
+    createPlayer(v.youtubeId)
+  }else{
+    loadYouTubeApi()
+  }
+  $("#vioPlayerShell").scrollIntoView({behavior:"smooth",block:"center"})
+}
+function createPlayer(videoId){
+  if(!window.YT?.Player)return;
+  if(ytPlayer&&typeof ytPlayer.loadVideoById==="function"){
+    try{ytPlayer.loadVideoById(videoId);return}catch{}
+  }
+  $("#vioPlayer").innerHTML="";
+  ytPlayer=new YT.Player("vioPlayer",{
+    videoId,
+    playerVars:{playsinline:1,rel:0,modestbranding:1},
+    events:{
+      onReady:e=>{try{e.target.playVideo()}catch{}},
+      onStateChange:e=>e.data===YT.PlayerState.PLAYING?startVioUsage():stopVioTicker()
+    }
+  })
+}
 function startVioUsage(){if(vioRemainingMs()<=0){stopVioPlayback();renderVio();return}if(vioPlaying)return;vioPlaying=true;vioPlayTickAt=Date.now();clearInterval(vioUsageInterval);vioUsageInterval=setInterval(()=>{if(!vioPlaying)return;const now=Date.now(),delta=now-vioPlayTickAt;vioPlayTickAt=now;state.vio.usedMs+=Math.max(0,Math.min(delta,2000));saveState({snapshot:false});renderVioTime();if(vioRemainingMs()<=0){stopVioPlayback();renderVio();toast("Mára elfogyott a videóidő")}},1000)}
 function renderVioTime(){const rem=vioRemainingMs(),lim=vioLimitMs(),frac=lim?rem/lim:0;$("#vioRemainingText").textContent=mmss(rem);$("#vioProgressBar").style.width=`${Math.max(0,Math.min(100,frac*100))}%`;$("#vioTimeSummary").textContent=rem>0?`Ma még ${mmss(rem)} videóidő maradt.`:"Mára elfogyott a videóidő."}
 function stopVioTicker(){if(vioPlaying){const now=Date.now();state.vio.usedMs+=Math.max(0,Math.min(now-vioPlayTickAt,2000));saveState({snapshot:false})}vioPlaying=false;clearInterval(vioUsageInterval);vioUsageInterval=null}
 function stopVioPlayback(){stopVioTicker();if(ytPlayer){try{ytPlayer.stopVideo()}catch{}}}
-function closeVioPlayer(){stopVioPlayback();$("#vioPlayerShell").hidden=true;vioCurrentVideoId=null}
+function closeVioPlayer(){stopVioPlayback();$("#vioPlayerShell").hidden=true;vioCurrentVideoId=null;markActiveVioVideo()}
 function puppy(){const m=["A kiskutya már szundikál. 💤","Holnap újra jöhet egy videó! 🌙","Most jöhet egy mese, rajzolás vagy játék. 💛"];$("#vioEndMessage").textContent=m[Math.floor(Math.random()*m.length)]}
 
 /* Cloud backup using Supabase Auth + REST */
