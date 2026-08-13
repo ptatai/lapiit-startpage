@@ -1,274 +1,80 @@
 <!doctype html>
 <html lang="hu">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="theme-color" content="#071018" />
-  <meta name="description" content="Személyes, testreszabható kezdőoldal időjárással, devizával, teendőkkel és fókuszidőzítővel." />
-  <link rel="manifest" href="manifest.webmanifest" />
-  <link rel="icon" href="icon.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="styles.css" />
-  <title>Péter kezdőoldala V4</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#071018">
+  <meta name="description" content="Lapiit Startpage V5 – többprofilos személyes kezdőoldal Vio gyerekfelülettel.">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+  <title>Lapiit Startpage V5</title>
 </head>
-<body data-theme="midnight" data-background="mountains">
-  <div id="backgroundStage" class="background-stage" aria-hidden="true">
-    <div class="background-base"></div>
-    <div class="background-effect effect-one"></div>
-    <div class="background-effect effect-two"></div>
-    <div class="background-effect effect-three"></div>
+<body data-theme="midnight" data-background="mountains" data-density="normal">
+  <div class="background-stage" aria-hidden="true">
+    <div class="background-base"></div><div class="background-effect effect-one"></div>
+    <div class="background-effect effect-two"></div><div class="background-effect effect-three"></div>
     <div class="background-overlay"></div>
   </div>
-
   <main class="page">
     <header class="topbar">
-      <div>
-        <div id="clock" class="clock">--:--</div>
-        <div id="date" class="date">Betöltés…</div>
-      </div>
+      <div><div id="clock" class="clock">--:--</div><div id="date" class="date">Betöltés…</div></div>
       <div class="top-actions">
-        <button class="icon-btn" id="refreshBtn" title="Adatok frissítése" aria-label="Adatok frissítése">↻</button>
-        <button class="icon-btn" id="bgNextBtn" title="Következő háttér" aria-label="Következő háttér">◫</button>
-        <button class="icon-btn" id="settingsBtn" title="Beállítások" aria-label="Beállítások">⚙</button>
-        <button class="icon-btn" id="fullscreenBtn" title="Teljes képernyő" aria-label="Teljes képernyő">⛶</button>
+        <button class="icon-btn" id="refreshBtn" title="Frissítés">↻</button><button class="icon-btn" id="bgNextBtn" title="Következő háttér">◫</button>
+        <button class="icon-btn" id="settingsBtn" title="Beállítások">⚙</button><button class="icon-btn" id="fullscreenBtn" title="Teljes képernyő">⛶</button>
       </div>
     </header>
-
-    <form id="searchForm" class="search-shell" role="search">
-      <select id="searchEngine" aria-label="Keresőmotor">
-        <option value="google">Google</option>
-        <option value="duckduckgo">DuckDuckGo</option>
-        <option value="youtube">YouTube</option>
-        <option value="github">GitHub</option>
-        <option value="wikipedia">Wikipédia</option>
-      </select>
-      <input id="searchInput" autocomplete="off" placeholder="Keresés az interneten…" aria-label="Keresés" />
-      <span class="search-shortcut">Ctrl K</span>
-      <button type="submit" aria-label="Keresés">⌕</button>
-    </form>
-
-    <section id="dashboard" class="dashboard">
-      <article class="card weather-card" draggable="true" data-widget="weather">
-        <div class="drag-handle" title="Áthúzással átrendezhető">⋮⋮</div>
-        <div class="card-inner">
-          <div class="card-title">
-            <span id="weatherTitle">Időjárás – Pécs</span>
-            <span id="weatherUpdated" class="small-muted"></span>
-          </div>
-          <div class="weather-main">
-            <div id="currentWeatherIcon" class="weather-icon">⛅</div>
-            <div>
-              <div id="currentTemp" class="temp loading">00°C</div>
-              <div id="currentCondition" class="condition">Betöltés…</div>
-              <div id="feelsLike" class="small-muted"></div>
-            </div>
-            <div class="weather-details">
-              <div class="weather-detail"><span>Páratartalom</span><strong id="humidity">--%</strong></div>
-              <div class="weather-detail"><span>Szél</span><strong id="wind">-- km/h</strong></div>
-              <div class="weather-detail"><span>Légnyomás</span><strong id="pressure">-- hPa</strong></div>
-              <div class="weather-detail"><span>Csapadék</span><strong id="precipitation">-- mm</strong></div>
-            </div>
-          </div>
-          <div id="weatherAdvice" class="weather-advice">
-            <span class="advice-icon">✦</span>
-            <span id="weatherAdviceText">Az ajánlás betöltése…</span>
-          </div>
-          <div id="forecast" class="forecast"></div>
-        </div>
-      </article>
-
-      <article class="card currencies-card" draggable="true" data-widget="currencies">
-        <div class="drag-handle" title="Áthúzással átrendezhető">⋮⋮</div>
-        <div class="card-inner">
-          <div class="card-title currency-header">
-            <span>Devizaárfolyamok</span>
-            <div class="currency-tools">
-              <div class="segmented" id="rangeSelector" aria-label="Grafikon időtartama">
-                <button data-range="7">7 nap</button>
-                <button data-range="30" class="active">30 nap</button>
-                <button data-range="90">90 nap</button>
-              </div>
-              <span id="currencyUpdated" class="small-muted">Betöltés…</span>
-            </div>
-          </div>
-          <div id="currencyGrid" class="currency-grid"></div>
-        </div>
-      </article>
-
-      <article class="card todos-card" draggable="true" data-widget="todos">
-        <div class="drag-handle" title="Áthúzással átrendezhető">⋮⋮</div>
-        <div class="card-inner">
-          <div class="card-title">
-            <span>Teendők</span>
-            <div>
-              <button id="clearDoneBtn" class="text-btn" title="Kész feladatok törlése">Kész feladatok törlése</button>
-              <span id="todoCount" class="small-muted"></span>
-            </div>
-          </div>
-          <div id="todoList" class="todo-list"></div>
-          <form id="todoForm" class="add-row">
-            <input id="todoInput" autocomplete="off" placeholder="Új feladat hozzáadása…" />
-            <button title="Hozzáadás" aria-label="Hozzáadás">+</button>
-          </form>
-        </div>
-      </article>
-
-      <article class="card links-card" draggable="true" data-widget="links">
-        <div class="drag-handle" title="Áthúzással átrendezhető">⋮⋮</div>
-        <div class="card-inner">
-          <div class="card-title">
-            <span>Gyorsindítás</span>
-            <span class="small-muted">szerkeszthető</span>
-          </div>
-          <div id="quickGrid" class="quick-grid"></div>
-          <button id="addLinkBtn" class="quick-add">＋ Új hivatkozás hozzáadása</button>
-        </div>
-      </article>
-
-      <article class="card focus-card" draggable="true" data-widget="focus">
-        <div class="drag-handle" title="Áthúzással átrendezhető">⋮⋮</div>
-        <div class="card-inner">
-          <div class="card-title">
-            <span>Fókusz</span>
-            <div class="segmented focus-tabs">
-              <button class="active" data-mode="stopwatch">Stopper</button>
-              <button data-mode="pomodoro">Pomodoro</button>
-            </div>
-          </div>
-          <div class="timer-wrap">
-            <div id="focusLabel" class="focus-label">Stopper</div>
-            <div id="timerDisplay" class="timer-display">00:00:00<span class="timer-ms">.00</span></div>
-            <div class="timer-buttons">
-              <button id="startTimer" class="start">Start</button>
-              <button id="lapTimer">Kör</button>
-              <button id="resetTimer" class="reset">Reset</button>
-            </div>
-            <div id="lapInfo" class="small-muted timer-info"></div>
-          </div>
-        </div>
-      </article>
+    <nav class="profile-tabs" aria-label="Profilok">
+      <button class="profile-tab active" data-profile="general">Általános</button><button class="profile-tab" data-profile="study">Tanulás</button>
+      <button class="profile-tab" data-profile="work">Munka</button><button class="profile-tab vio-tab" data-profile="vio">Vio</button>
+    </nav>
+    <section id="normalView">
+      <form id="searchForm" class="search-shell" role="search">
+        <select id="searchEngine" aria-label="Keresőmotor"><option value="google">Google</option><option value="duckduckgo">DuckDuckGo</option><option value="youtube">YouTube</option><option value="github">GitHub</option><option value="wikipedia">Wikipédia</option></select>
+        <input id="searchInput" autocomplete="off" placeholder="Keresés…  pl. yt ambient coding"><span class="search-shortcut">Ctrl K</span><button type="submit">⌕</button>
+      </form>
+      <section id="dashboard" class="dashboard">
+        <article class="card weather-card" draggable="true" data-widget="weather"><div class="drag-handle">⋮⋮</div><div class="card-inner">
+          <div class="card-title"><span id="weatherTitle">Időjárás – Pécs</span><span id="weatherUpdated" class="small-muted"></span></div>
+          <div class="weather-main"><div id="currentWeatherIcon" class="weather-icon">⛅</div><div><div id="currentTemp" class="temp loading">00°C</div><div id="currentCondition" class="condition">Betöltés…</div><div id="feelsLike" class="small-muted"></div></div>
+            <div class="weather-details"><div class="weather-detail"><span>Páratartalom</span><strong id="humidity">--%</strong></div><div class="weather-detail"><span>Szél</span><strong id="wind">-- km/h</strong></div><div class="weather-detail"><span>Légnyomás</span><strong id="pressure">-- hPa</strong></div><div class="weather-detail"><span>Csapadék</span><strong id="precipitation">-- mm</strong></div></div></div>
+          <div class="weather-advice"><span class="advice-icon">✦</span><span id="weatherAdviceText">Az ajánlás betöltése…</span></div><div id="forecast" class="forecast"></div>
+        </div></article>
+        <article class="card currencies-card" draggable="true" data-widget="currencies"><div class="drag-handle">⋮⋮</div><div class="card-inner">
+          <div class="card-title currency-header"><span>Devizaárfolyamok</span><div class="currency-tools"><div class="segmented" id="rangeSelector"><button type="button" data-range="7">7 nap</button><button type="button" data-range="30" class="active">30 nap</button><button type="button" data-range="90">90 nap</button></div><span id="currencyUpdated" class="small-muted">Betöltés…</span></div></div><div id="currencyGrid" class="currency-grid"></div>
+        </div></article>
+        <article class="card todos-card" draggable="true" data-widget="todos"><div class="drag-handle">⋮⋮</div><div class="card-inner">
+          <div class="card-title"><span id="todoTitle">Teendők</span><div class="title-actions"><button id="clearDoneBtn" class="text-btn" type="button">Kész törlése</button><span id="todoCount" class="small-muted"></span></div></div>
+          <div id="todoList" class="todo-list"></div><form id="todoForm" class="add-row"><input id="todoInput" autocomplete="off" placeholder="Új feladat…"><button>+</button></form>
+        </div></article>
+        <article class="card links-card" draggable="true" data-widget="links"><div class="drag-handle">⋮⋮</div><div class="card-inner">
+          <div class="card-title"><span id="linksTitle">Gyorsindítás</span><span class="small-muted">húzással rendezhető</span></div><div id="quickGrid" class="quick-grid"></div><button id="addLinkBtn" class="quick-add" type="button">＋ Új hivatkozás</button>
+        </div></article>
+        <article class="card focus-card" draggable="true" data-widget="focus"><div class="drag-handle">⋮⋮</div><div class="card-inner">
+          <div class="card-title"><span>Fókusz</span><div class="segmented focus-tabs"><button type="button" class="active" data-mode="stopwatch">Stopper</button><button type="button" data-mode="pomodoro">Pomodoro</button></div></div>
+          <div class="timer-wrap"><div id="focusLabel" class="focus-label">Stopper</div><div id="timerDisplay" class="timer-display">00:00:00<span class="timer-ms">.00</span></div><div class="timer-buttons"><button id="startTimer" class="start" type="button">Start</button><button id="lapTimer" type="button">Kör</button><button id="resetTimer" class="reset" type="button">Reset</button></div><div id="lapInfo" class="small-muted timer-info"></div></div>
+        </div></article>
+      </section>
     </section>
-
-    <footer class="footer">
-      <span id="quoteText">„Fókuszálj a haladásra, ne a tökéletességre.”</span>
-    </footer>
+    <section id="vioView" class="vio-view" hidden>
+      <div class="vio-hero"><div><div class="vio-eyebrow">Vio kuckója</div><h1>Mit nézzünk vagy nyissunk meg?</h1><p id="vioTimeSummary">A napi videóidő betöltése…</p></div><button id="vioParentBtn" class="parent-lock" type="button">🔒 Szülő</button></div>
+      <div class="vio-time-card"><div class="vio-time-top"><span>Mai videóidő</span><strong id="vioRemainingText">15:00</strong></div><div class="time-progress"><span id="vioProgressBar"></span></div><div class="small-muted">Csak a tényleges lejátszás számít bele.</div></div>
+      <div id="vioEndCard" class="vio-end-card" hidden><button id="sleepyDog" class="sleepy-dog" type="button" aria-label="Alvó kiskutya"><svg viewBox="0 0 260 190" role="img" aria-label="Alvó kiskutya"><ellipse class="dog-bed" cx="130" cy="166" rx="92" ry="17"/><ellipse class="dog-body" cx="132" cy="119" rx="64" ry="45"/><circle class="dog-head" cx="109" cy="82" r="51"/><path class="dog-ear left-ear" d="M72 51 C44 38,43 88,73 101 C82 82,83 65,72 51Z"/><path class="dog-ear right-ear" d="M142 50 C171 39,177 81,148 99 C139 82,136 65,142 50Z"/><path class="dog-eye" d="M87 81 Q96 88 105 81"/><path class="dog-eye" d="M118 81 Q127 88 136 81"/><ellipse class="dog-muzzle" cx="112" cy="101" rx="24" ry="18"/><ellipse class="dog-nose" cx="111" cy="96" rx="8" ry="6"/><path class="dog-mouth" d="M111 102 Q112 111 122 112"/><path class="dog-tail" d="M188 118 Q228 93 218 132"/><text class="zzz z1" x="172" y="61">z</text><text class="zzz z2" x="196" y="43">z</text><text class="zzz z3" x="221" y="25">Z</text></svg></button><h2>Mára elfogyott a videóidő 🌙</h2><p id="vioEndMessage">A kiskutya is elfáradt. Holnap újra jöhetnek a videók.</p></div>
+      <div id="vioContent"><section class="vio-section"><div class="section-heading"><h2>Videók</h2><span class="small-muted">Csak az általad jóváhagyott videók</span></div><div id="vioVideoGrid" class="vio-grid"></div><div id="vioPlayerShell" class="vio-player-shell" hidden><div class="player-heading"><strong id="vioPlayerTitle">Videó</strong><button id="vioClosePlayerBtn" type="button">Bezárás</button></div><div id="vioPlayer"></div></div></section><section class="vio-section"><div class="section-heading"><h2>Kedvenc oldalak</h2><span class="small-muted">Mintha könyvjelzők lennének</span></div><div id="vioLinkGrid" class="vio-grid"></div></section></div>
+    </section>
+    <footer class="footer"><span id="quoteText">„Fókuszálj a haladásra, ne a tökéletességre.”</span></footer>
   </main>
-
-  <aside id="settingsPanel" class="settings-panel" aria-hidden="true">
-    <div class="settings-header">
-      <div>
-        <h2>Beállítások</h2>
-        <p>Az adatok ebben a böngészőben maradnak.</p>
-      </div>
-      <button id="closeSettingsBtn" class="icon-btn" aria-label="Bezárás">×</button>
-    </div>
-
-    <div class="settings-content">
-      <section class="settings-section">
-        <h3>Megjelenés</h3>
-        <label>
-          Téma
-          <select id="themeSelect">
-            <option value="midnight">Midnight</option>
-            <option value="forest">Forest</option>
-            <option value="aurora">Aurora</option>
-            <option value="warm">Warm</option>
-            <option value="light">Light</option>
-          </select>
-        </label>
-        <label>
-          Animált háttér
-          <select id="backgroundSelect">
-            <option value="mountains">Ködös hegyek</option>
-            <option value="aurora">Északi fény</option>
-            <option value="stars">Csillagos ég</option>
-            <option value="rain">Esős ablak</option>
-            <option value="waves">Absztrakt hullámok</option>
-          </select>
-        </label>
-        <label>
-          Háttér sötétítése
-          <input id="backgroundDimRange" type="range" min="10" max="78" step="1" />
-        </label>
-        <label class="toggle-item">
-          <span>Automatikus háttérváltás</span>
-          <input id="autoBackgroundToggle" type="checkbox" />
-        </label>
-        <label class="toggle-item">
-          <span>Véletlen háttér induláskor</span>
-          <input id="randomBackgroundToggle" type="checkbox" />
-        </label>
-        <label class="toggle-item">
-          <span>Mozgó háttér</span>
-          <input id="motionToggle" type="checkbox" />
-        </label>
-        <label>
-          Üveghatás
-          <input id="glassRange" type="range" min="55" max="94" step="1" />
-        </label>
-        <label>
-          Idézet
-          <input id="quoteInput" type="text" />
-        </label>
-      </section>
-
-      <section class="settings-section">
-        <h3>Időjárás</h3>
-        <label>
-          Város
-          <input id="cityInput" type="text" placeholder="Pécs" />
-        </label>
-        <button id="saveCityBtn" class="primary-btn">Város keresése és mentése</button>
-      </section>
-
-      <section class="settings-section">
-        <h3>Devizák</h3>
-        <p class="hint">Legfeljebb három ISO-kód, vesszővel elválasztva.</p>
-        <label>
-          Devizák
-          <input id="currenciesInput" type="text" placeholder="GBP, EUR, USD" />
-        </label>
-        <button id="saveCurrenciesBtn" class="primary-btn">Devizák mentése</button>
-      </section>
-
-      <section class="settings-section">
-        <h3>Widgetek</h3>
-        <div id="widgetToggles" class="toggle-list"></div>
-      </section>
-
-      <section class="settings-section">
-        <h3>Mentés és átvitel</h3>
-        <div class="button-grid">
-          <button id="exportBtn">Beállítások exportálása</button>
-          <button id="importBtn">Importálás</button>
-          <input id="importFile" type="file" accept="application/json" hidden />
-          <button id="resetAllBtn" class="danger-btn">Alaphelyzet</button>
-        </div>
-      </section>
-    </div>
-  </aside>
-
-  <div id="overlay" class="overlay"></div>
-
-  <dialog id="linkDialog" class="modal">
-    <form method="dialog" id="linkForm">
-      <div class="modal-header">
-        <h3 id="linkDialogTitle">Hivatkozás</h3>
-        <button value="cancel" class="icon-btn" aria-label="Bezárás">×</button>
-      </div>
-      <input type="hidden" id="linkId" />
-      <label>Név<input id="linkName" required /></label>
-      <label>Webcím<input id="linkUrl" type="url" required placeholder="https://…" /></label>
-      <label>Ikon vagy rövid jel <span class="hint-inline">(opcionális, a favicon automatikus)</span><input id="linkIcon" maxlength="3" placeholder="♫" /></label>
-      <div class="modal-actions">
-        <button value="cancel">Mégse</button>
-        <button id="deleteLinkBtn" type="button" class="danger-btn">Törlés</button>
-        <button id="saveLinkBtn" type="submit" value="default" class="primary-btn">Mentés</button>
-      </div>
-    </form>
-  </dialog>
-
-  <div id="status" class="status"></div>
-
-  <script src="app.js"></script>
-</body>
-</html>
+  <aside id="settingsPanel" class="settings-panel" aria-hidden="true"><div class="settings-header"><div><h2>Beállítások</h2><p>Helyi mentés automatikus; a felhő opcionális.</p></div><button id="closeSettingsBtn" class="icon-btn">×</button></div><div class="settings-content">
+    <section class="settings-section"><h3>Megjelenés</h3><label>Téma<select id="themeSelect"><option value="midnight">Midnight</option><option value="forest">Forest</option><option value="aurora">Aurora</option><option value="warm">Warm</option><option value="light">Light</option></select></label><label>Widgetméret<select id="densitySelect"><option value="normal">Normál</option><option value="compact">Kompakt</option></select></label><label>Animált háttér<select id="backgroundSelect"><option value="mountains">Ködös hegyek</option><option value="aurora">Északi fény</option><option value="stars">Csillagos ég</option><option value="rain">Esős ablak</option><option value="waves">Absztrakt hullámok</option></select></label><label>Háttér sötétítése<input id="backgroundDimRange" type="range" min="10" max="78"></label><label class="toggle-item"><span>Automatikus háttérváltás</span><input id="autoBackgroundToggle" type="checkbox"></label><label class="toggle-item"><span>Véletlen háttér induláskor</span><input id="randomBackgroundToggle" type="checkbox"></label><label class="toggle-item"><span>Mozgó háttér</span><input id="motionToggle" type="checkbox"></label><label>Üveghatás<input id="glassRange" type="range" min="55" max="94"></label><label>Idézet<input id="quoteInput"></label></section>
+    <section class="settings-section"><h3>Aktuális profil: <span id="currentProfileName">Általános</span></h3><p class="hint">A widgetek láthatósága profilonként külön mentődik.</p><div id="widgetToggles" class="toggle-list"></div></section>
+    <section class="settings-section"><h3>Időjárás</h3><label>Város<input id="cityInput" placeholder="Pécs"></label><button id="saveCityBtn" class="primary-btn" type="button">Város keresése és mentése</button></section>
+    <section class="settings-section"><h3>Devizák</h3><p class="hint">1, 2 vagy 3 devizánál a kártyák automatikusan kitöltik a helyet.</p><label>Devizák<input id="currenciesInput" placeholder="GBP, EUR, USD"></label><button id="saveCurrenciesBtn" class="primary-btn" type="button">Devizák mentése</button></section>
+    <section class="settings-section"><h3>Automatikus felhőmentés</h3><p class="hint">Opcionális Supabase mentés. A jelszót nem tároljuk.</p><label>Project URL<input id="cloudUrlInput" type="url" placeholder="https://xxxxx.supabase.co"></label><label>Publishable / anon key<input id="cloudKeyInput" type="password" autocomplete="off"></label><label>E-mail<input id="cloudEmailInput" type="email" autocomplete="username"></label><label>Jelszó<input id="cloudPasswordInput" type="password" autocomplete="current-password"></label><div class="button-grid cloud-buttons"><button id="cloudSignUpBtn" type="button">Regisztráció</button><button id="cloudSignInBtn" class="primary-btn" type="button">Belépés</button><button id="cloudBackupBtn" type="button">Mentés most</button><button id="cloudRestoreBtn" type="button">Legutóbbi visszaállítása</button><button id="cloudSignOutBtn" type="button">Kilépés</button></div><div id="cloudStatus" class="cloud-status">Nincs bejelentkezve.</div><div id="cloudSnapshots" class="cloud-snapshots"></div></section>
+    <section class="settings-section"><h3>Mentés és átvitel</h3><div class="button-grid"><button id="exportBtn" type="button">JSON export</button><button id="importBtn" type="button">JSON import</button><input id="importFile" type="file" accept="application/json" hidden><button id="restoreLocalBtn" type="button">Utolsó helyi mentés</button><button id="resetAllBtn" class="danger-btn" type="button">Alaphelyzet</button></div></section>
+  </div></aside><div id="overlay" class="overlay"></div>
+  <dialog id="linkDialog" class="modal"><form method="dialog" id="linkForm"><div class="modal-header"><h3 id="linkDialogTitle">Hivatkozás</h3><button value="cancel" class="icon-btn">×</button></div><input type="hidden" id="linkId"><label>Név<input id="linkName" required></label><label>Webcím<input id="linkUrl" type="url" required></label><label>Ikon / rövid jel<input id="linkIcon" maxlength="3"></label><div class="modal-actions"><button value="cancel">Mégse</button><button id="deleteLinkBtn" type="button" class="danger-btn">Törlés</button><button type="submit" value="default" class="primary-btn">Mentés</button></div></form></dialog>
+  <dialog id="todoDialog" class="modal"><form method="dialog" id="todoEditForm"><div class="modal-header"><h3>Feladat szerkesztése</h3><button value="cancel" class="icon-btn">×</button></div><input type="hidden" id="todoEditId"><label>Feladat<input id="todoEditText" required></label><div class="modal-actions"><button value="cancel">Mégse</button><button id="todoDeleteBtn" type="button" class="danger-btn">Törlés</button><button type="submit" value="default" class="primary-btn">Mentés</button></div></form></dialog>
+  <dialog id="pinDialog" class="modal"><form method="dialog" id="pinForm"><div class="modal-header"><h3 id="pinTitle">Szülői PIN</h3><button value="cancel" class="icon-btn">×</button></div><p id="pinHelp" class="hint"></p><label>PIN<input id="pinInput" type="password" inputmode="numeric" minlength="4" maxlength="8" required></label><label id="pinConfirmWrap">PIN újra<input id="pinConfirmInput" type="password" inputmode="numeric" minlength="4" maxlength="8"></label><div class="modal-actions"><button value="cancel">Mégse</button><button type="submit" value="default" class="primary-btn">Tovább</button></div></form></dialog>
+  <dialog id="vioParentDialog" class="modal vio-parent-modal"><form method="dialog"><div class="modal-header"><h3>Vio – szülői beállítások</h3><button value="cancel" class="icon-btn">×</button></div><label>Napi YouTube-limit (perc)<input id="vioLimitInput" type="number" min="1" max="240"></label><div class="parent-actions"><button id="vioPlusFiveBtn" type="button">+5 perc mára</button><button id="vioResetTodayBtn" type="button">Mai idő nullázása</button></div><hr><h4>Jóváhagyott YouTube-videó</h4><label>Cím<input id="vioVideoTitleInput"></label><label>YouTube URL<input id="vioVideoUrlInput" type="url"></label><button id="vioAddVideoBtn" type="button" class="primary-btn">Videó hozzáadása</button><div id="vioParentVideoList" class="parent-list"></div><hr><h4>Vio könyvjelző</h4><label>Név<input id="vioLinkTitleInput"></label><label>URL<input id="vioLinkUrlInput" type="url"></label><button id="vioAddLinkBtn" type="button" class="primary-btn">Oldal hozzáadása</button><div id="vioParentLinkList" class="parent-list"></div><hr><div class="parent-actions"><button id="vioChangePinBtn" type="button">PIN módosítása</button><button id="vioCloseParentBtn" type="button" class="primary-btn">Kész</button></div></form></dialog>
+  <div id="status" class="status"></div><script src="app.js"></script>
+</body></html>

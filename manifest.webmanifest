@@ -1,11 +1,11 @@
 {
-  "name": "Péter kezdőoldala V4",
-  "short_name": "Kezdőoldal",
+  "name": "Lapiit Startpage V5",
+  "short_name": "Startpage",
   "start_url": "./",
   "display": "standalone",
   "background_color": "#071018",
   "theme_color": "#071018",
-  "description": "Személyes kezdőoldal keresővel, intelligens időjárási ajánlással, devizakalkulátorral és rendezhető gyorslinkekkel.",
+  "description": "Többprofilos személyes kezdőoldal Vio gyerekfelülettel és opcionális felhőmentéssel.",
   "icons": [
     {
       "src": "icon.svg",
