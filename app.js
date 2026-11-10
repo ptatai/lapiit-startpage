@@ -1,12 +1,13 @@
 "use strict";
 const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
 const locale="hu-HU";
-const STORAGE_KEY="peterStartpageV5", LEGACY_KEYS=["peterStartpageV4","peterStartpageV3","peterStartpageV2"];
-const LOCAL_SNAPSHOTS_KEY="peterStartpageLocalSnapshotsV5", CLOUD_SESSION_KEY="peterStartpageCloudSessionV5";
-const BACKGROUNDS=["mountains","aurora","stars","rain","waves"];
-const PROFILE_LABELS={general:"Általános",study:"Tanulás",work:"Munka",vio:"Vio"};
+const STORAGE_KEY="peterStartpageV6", LEGACY_KEYS=["peterStartpageV5","peterStartpageV4","peterStartpageV3","peterStartpageV2"];
+const DEVICE_KEY="lapiitStartpageDeviceV6", CUSTOM_BG_KEY="lapiitStartpageCustomBackgroundV6", NAMEDAY_CACHE_KEY="lapiitNamedayCacheV1";
+const LOCAL_SNAPSHOTS_KEY="peterStartpageLocalSnapshotsV6", CLOUD_SESSION_KEY="peterStartpageCloudSessionV5";
+const BACKGROUNDS=["aurora","mountains","stars","abstract","sunrise","custom"];
+const PROFILE_LABELS={general:"Home",study:"Focus",work:"Work",vio:"Vio"};
 const NORMAL_PROFILES=["general","study","work"];
-const WIDGET_LABELS={weather:"Időjárás",currencies:"Deviza",todos:"Teendők",links:"Gyorsindítás",focus:"Fókuszidőzítő"};
+const WIDGET_LABELS={weather:"Időjárás",currencies:"Deviza",todos:"Teendők",links:"Gyorsindítás",agenda:"Agenda",focus:"Fókuszidőzítő"};
 const SEARCH_ENGINES={
   google:q=>`https://www.google.com/search?q=${encodeURIComponent(q)}`,
   duckduckgo:q=>`https://duckduckgo.com/?q=${encodeURIComponent(q)}`,
@@ -16,22 +17,22 @@ const SEARCH_ENGINES={
 };
 const SEARCH_PREFIXES={g:"google",google:"google",ddg:"duckduckgo",d:"duckduckgo",yt:"youtube",youtube:"youtube",gh:"github",github:"github",w:"wikipedia",wiki:"wikipedia"};
 const uuid=()=>crypto.randomUUID?crypto.randomUUID():`${Date.now()}-${Math.random().toString(16).slice(2)}`;
-const profile=(label,links,extra={})=>({label,todos:[],links,widgetVisibility:{weather:true,currencies:true,todos:true,links:true,focus:true,...extra},widgetOrder:["weather","currencies","todos","links","focus"]});
+const profile=(label,links,extra={})=>({label,todos:[],agenda:[],links,widgetVisibility:{weather:true,currencies:true,todos:true,links:true,agenda:true,focus:true,...extra},widgetOrder:["weather","currencies","todos","links","agenda","focus"]});
 const DEFAULT_STATE={
-  version:5,activeProfile:"general",theme:"midnight",density:"normal",background:"mountains",backgroundDim:42,autoRotateBackground:false,randomBackground:false,backgroundMotion:true,glass:82,
+  version:6,activeProfile:"general",theme:"midnight",density:"normal",background:"aurora",backgroundDim:42,glass:82,
   quote:"„Fókuszálj a haladásra, ne a tökéletességre.”",searchEngine:"google",
   city:{name:"Pécs",latitude:46.0727,longitude:18.2323,timezone:"Europe/Budapest"},
   currencies:["GBP","EUR","USD"],currencyRange:30,currencyWidgetSize:"auto",currencyAmounts:{GBP:1000,EUR:1000,USD:1000},pomodoro:{workMinutes:25,breakMinutes:5},
   profiles:{
-    general:profile("Általános",[
+    general:profile("Home",[
       {id:uuid(),name:"Spotify",url:"https://open.spotify.com",icon:"♫"},{id:uuid(),name:"Gmail",url:"https://mail.google.com",icon:"M"},
       {id:uuid(),name:"YouTube",url:"https://youtube.com",icon:"▶"},{id:uuid(),name:"ChatGPT",url:"https://chatgpt.com",icon:"✦"},
       {id:uuid(),name:"GitHub",url:"https://github.com",icon:"⌘"},{id:uuid(),name:"Naptár",url:"https://calendar.google.com",icon:"31"}]),
-    study:profile("Tanulás",[
+    study:profile("Focus",[
       {id:uuid(),name:"ChatGPT",url:"https://chatgpt.com",icon:"✦"},{id:uuid(),name:"GitHub",url:"https://github.com",icon:"⌘"},
       {id:uuid(),name:"MDN",url:"https://developer.mozilla.org",icon:"MDN"},{id:uuid(),name:"Spring",url:"https://start.spring.io",icon:"S"},
       {id:uuid(),name:"YouTube",url:"https://youtube.com",icon:"▶"}],{currencies:false}),
-    work:profile("Munka",[
+    work:profile("Work",[
       {id:uuid(),name:"Gmail",url:"https://mail.google.com",icon:"M"},{id:uuid(),name:"Naptár",url:"https://calendar.google.com",icon:"31"},
       {id:uuid(),name:"ChatGPT",url:"https://chatgpt.com",icon:"✦"},{id:uuid(),name:"GitHub",url:"https://github.com",icon:"⌘"},
       {id:uuid(),name:"LinkedIn",url:"https://www.linkedin.com",icon:"in"}],{currencies:false})
@@ -48,8 +49,8 @@ function migrate(info){
   const b=clone(DEFAULT_STATE),s=info?.value;if(!s)return b;
   if(s.profiles){
     const m={...b,...s,city:{...b.city,...(s.city||{})},currencyAmounts:{...b.currencyAmounts,...(s.currencyAmounts||{})},pomodoro:{...b.pomodoro,...(s.pomodoro||{})},cloud:{...b.cloud,...(s.cloud||{})},vio:{...b.vio,...(s.vio||{})},profiles:{...b.profiles}};
-    for(const k of NORMAL_PROFILES){m.profiles[k]={...b.profiles[k],...(s.profiles[k]||{}),widgetVisibility:{...b.profiles[k].widgetVisibility,...(s.profiles[k]?.widgetVisibility||{})},todos:Array.isArray(s.profiles[k]?.todos)?s.profiles[k].todos:b.profiles[k].todos,links:Array.isArray(s.profiles[k]?.links)?s.profiles[k].links:b.profiles[k].links,widgetOrder:Array.isArray(s.profiles[k]?.widgetOrder)?s.profiles[k].widgetOrder:b.profiles[k].widgetOrder}}
-    m.version=5;return m;
+    for(const k of NORMAL_PROFILES){m.profiles[k]={...b.profiles[k],...(s.profiles[k]||{}),widgetVisibility:{...b.profiles[k].widgetVisibility,...(s.profiles[k]?.widgetVisibility||{}),agenda:s.profiles[k]?.widgetVisibility?.agenda??true},todos:Array.isArray(s.profiles[k]?.todos)?s.profiles[k].todos:b.profiles[k].todos,agenda:Array.isArray(s.profiles[k]?.agenda)?s.profiles[k].agenda:[],links:Array.isArray(s.profiles[k]?.links)?s.profiles[k].links:b.profiles[k].links,widgetOrder:Array.isArray(s.profiles[k]?.widgetOrder)?(s.profiles[k].widgetOrder.includes("agenda")?s.profiles[k].widgetOrder:[...s.profiles[k].widgetOrder,"agenda"]):b.profiles[k].widgetOrder}}
+    m.version=6;return m;
   }
   b.theme=s.theme??b.theme;b.background=s.background??b.background;b.backgroundDim=s.backgroundDim??b.backgroundDim;b.autoRotateBackground=s.autoRotateBackground??b.autoRotateBackground;b.randomBackground=s.randomBackground??b.randomBackground;b.backgroundMotion=s.backgroundMotion??b.backgroundMotion;b.glass=s.glass??b.glass;b.quote=s.quote??b.quote;b.searchEngine=s.searchEngine??b.searchEngine;
   b.city={...b.city,...(s.city||{})};b.currencies=Array.isArray(s.currencies)?s.currencies:b.currencies;b.currencyRange=s.currencyRange??b.currencyRange;b.currencyWidgetSize=s.currencyWidgetSize??b.currencyWidgetSize;b.currencyAmounts={...b.currencyAmounts,...(s.currencyAmounts||{})};b.pomodoro={...b.pomodoro,...(s.pomodoro||{})};
@@ -58,7 +59,11 @@ function migrate(info){
 let state=migrate(loadSaved());
 if(!["midnight","light"].includes(state.theme)) state.theme="midnight";
 if(!state.vio.day)state.vio.day=todayKey();
-let latestRates={},latestChartData={},backgroundRotationTimer=null,localSnapshotLastAt=0,cloudBackupTimer=null,lastCloudBackupAt=0;
+const DEFAULT_DEVICE={profileOrder:["general","study","work"],defaultProfile:"general",vioVisible:false,widgetSizes:{general:{weather:"m",currencies:"l",todos:"m",links:"m",agenda:"m",focus:"m"},study:{weather:"m",currencies:"l",todos:"m",links:"m",agenda:"m",focus:"m"},work:{weather:"m",currencies:"l",todos:"m",links:"m",agenda:"m",focus:"m"}},background:"aurora",backgroundDim:42,backgroundBlur:0};
+function loadDevice(){try{const d=JSON.parse(localStorage.getItem(DEVICE_KEY)||"null");return d?{...clone(DEFAULT_DEVICE),...d,profileOrder:Array.isArray(d.profileOrder)?d.profileOrder.filter(x=>NORMAL_PROFILES.includes(x)):clone(DEFAULT_DEVICE.profileOrder),widgetSizes:{...clone(DEFAULT_DEVICE.widgetSizes),...(d.widgetSizes||{})}}:clone(DEFAULT_DEVICE)}catch{return clone(DEFAULT_DEVICE)}}
+let device=loadDevice();if(device.profileOrder.length!==3)device.profileOrder=clone(DEFAULT_DEVICE.profileOrder);if(!NORMAL_PROFILES.includes(device.defaultProfile))device.defaultProfile="general";state.activeProfile=device.defaultProfile;
+function saveDevice(){localStorage.setItem(DEVICE_KEY,JSON.stringify(device))}
+let latestRates={},latestChartData={},localSnapshotLastAt=0,cloudBackupTimer=null,lastCloudBackupAt=0,agendaView="upcoming",currencyDragCode=null;
 const currentProfile=()=>NORMAL_PROFILES.includes(state.activeProfile)?state.profiles[state.activeProfile]:state.profiles.general;
 function getLocalSnapshots(){try{return JSON.parse(localStorage.getItem(LOCAL_SNAPSHOTS_KEY)||"[]")}catch{return[]}}
 function saveLocalSnapshot(){const a=getLocalSnapshots();a.unshift({id:uuid(),createdAt:new Date().toISOString(),state:clone(state)});localStorage.setItem(LOCAL_SNAPSHOTS_KEY,JSON.stringify(a.slice(0,5)))}
@@ -66,24 +71,29 @@ function saveState({snapshot=true,cloud=true}={}){localStorage.setItem(STORAGE_K
 function restoreLastLocalSnapshot(){const x=getLocalSnapshots()[0];if(!x)return toast("Nincs helyi pillanatkép");if(!confirm(`Visszaállítsam? ${new Date(x.createdAt).toLocaleString(locale)}`))return;state=migrate({value:x.state});saveState({snapshot:false,cloud:false});initUi();Promise.all([loadWeather(),loadCurrencies()]);toast("Helyi mentés visszaállítva")}
 function toast(msg){const e=$("#status");e.textContent=msg;e.classList.add("show");clearTimeout(toast.t);toast.t=setTimeout(()=>e.classList.remove("show"),2600)}
 function updateClock(){const n=new Date();$("#clock").textContent=n.toLocaleTimeString(locale,{hour:"2-digit",minute:"2-digit"});$("#date").textContent=n.toLocaleDateString(locale,{year:"numeric",month:"long",day:"numeric",weekday:"long"})}
+async function loadNameday(){const el=$("#nameday");if(!el)return;const day=todayKey();try{const cached=JSON.parse(localStorage.getItem(NAMEDAY_CACHE_KEY)||"null");if(cached?.day===day&&Array.isArray(cached.names)){el.textContent=`Névnap: ${cached.names.join(", ")}`;return}}catch{}try{const r=await fetch("https://www.nevinfo.hu/api/v1/ma");if(!r.ok)throw 0;const d=await r.json(),names=(d.ma||[]).map(x=>x.name).filter(Boolean);if(!names.length)throw 0;localStorage.setItem(NAMEDAY_CACHE_KEY,JSON.stringify({day,names}));el.textContent=`Névnap: ${names.join(", ")}`}catch{el.textContent="Névnap: —"}}
 
 /* appearance */
+function customBackgroundData(){return localStorage.getItem(CUSTOM_BG_KEY)||""}
 function applyAppearance(){
-  document.body.dataset.theme=state.theme;document.body.dataset.background=state.background;document.body.dataset.density=state.density||"normal";document.body.classList.toggle("no-background-motion",!state.backgroundMotion);
-  document.documentElement.style.setProperty("--panel-alpha",(state.glass/100).toFixed(2));document.documentElement.style.setProperty("--background-dim",(state.backgroundDim/100).toFixed(2));
-  $("#quoteText").textContent=state.quote;$("#themeSelect").value=state.theme;$("#densitySelect").value=state.density||"normal";$("#backgroundSelect").value=state.background;$("#backgroundDimRange").value=state.backgroundDim;$("#autoBackgroundToggle").checked=state.autoRotateBackground;$("#randomBackgroundToggle").checked=state.randomBackground;$("#motionToggle").checked=state.backgroundMotion;$("#glassRange").value=state.glass;$("#quoteInput").value=state.quote;$("#searchEngine").value=state.searchEngine;
-  $('meta[name="theme-color"]').content=state.theme==="light"?"#e8edf3":"#071018";configureBackgroundRotation()
+  document.body.dataset.theme=state.theme;document.body.dataset.background=device.background;document.body.dataset.density=state.density||"normal";
+  document.documentElement.style.setProperty("--panel-alpha",(state.glass/100).toFixed(2));document.documentElement.style.setProperty("--background-dim",(device.backgroundDim/100).toFixed(2));document.documentElement.style.setProperty("--background-blur",`${device.backgroundBlur||0}px`);
+  const custom=customBackgroundData();document.documentElement.style.setProperty("--custom-background-image",custom?`url(${JSON.stringify(custom)})`:"none");
+  $("#quoteText").textContent=state.quote;$("#themeSelect").value=state.theme;$("#densitySelect").value=state.density||"normal";$("#backgroundSelect").value=device.background;$("#backgroundDimRange").value=device.backgroundDim;$("#backgroundBlurRange").value=device.backgroundBlur||0;$("#glassRange").value=state.glass;$("#quoteInput").value=state.quote;$("#searchEngine").value=state.searchEngine;
+  $('meta[name="theme-color"]').content=state.theme==="light"?"#e8edf3":"#071018"
 }
-function setBackground(name){if(!BACKGROUNDS.includes(name))return;state.background=name;saveState();applyAppearance()}
-function nextBackground(){const i=BACKGROUNDS.indexOf(state.background);setBackground(BACKGROUNDS[(i+1)%BACKGROUNDS.length]);toast(`Háttér: ${$("#backgroundSelect").selectedOptions[0]?.textContent||state.background}`)}
-function configureBackgroundRotation(){clearInterval(backgroundRotationTimer);if(state.autoRotateBackground)backgroundRotationTimer=setInterval(()=>{const i=BACKGROUNDS.indexOf(state.background);state.background=BACKGROUNDS[(i+1)%BACKGROUNDS.length];saveState();document.body.dataset.background=state.background;$("#backgroundSelect").value=state.background},600000)}
+function setBackground(name){if(!BACKGROUNDS.includes(name))return;if(name==="custom"&&!customBackgroundData()){toast("Előbb válassz saját háttérképet");$("#customBackgroundFile").click();return}device.background=name;saveDevice();applyAppearance()}
+function nextBackground(){const available=BACKGROUNDS.filter(x=>x!=="custom"||customBackgroundData()),i=available.indexOf(device.background);setBackground(available[(Math.max(i,0)+1)%available.length]);toast(`Háttér: ${$("#backgroundSelect").selectedOptions[0]?.textContent||device.background}`)}
 function renderWidgetToggles(){if(state.activeProfile==="vio"){ $("#widgetToggles").innerHTML='<div class="hint">A Vio külön gyerekfelület; a 🔒 Szülő gombbal állítható.</div>';return}const p=currentProfile();$("#widgetToggles").innerHTML=Object.entries(WIDGET_LABELS).map(([k,l])=>`<label class="toggle-item"><span>${l}</span><input type="checkbox" data-widget-toggle="${k}" ${p.widgetVisibility[k]?"checked":""}></label>`).join("")}
-function applyWidgetLayout(){const p=currentProfile(),d=$("#dashboard");p.widgetOrder.forEach(n=>{const c=$(`[data-widget="${n}"]`);if(c)d.appendChild(c)});Object.entries(p.widgetVisibility).forEach(([n,v])=>$(`[data-widget="${n}"]`)?.classList.toggle("hidden-widget",!v))}
+function sizeLabel(s){return({s:"S",m:"M",l:"L"})[s]||"M"}
+function applyWidgetSizes(){if(!NORMAL_PROFILES.includes(state.activeProfile))return;const sizes=device.widgetSizes[state.activeProfile]||{};$$('.card',$("#dashboard")).forEach(c=>{const k=c.dataset.widget,s=sizes[k]||DEFAULT_DEVICE.widgetSizes[state.activeProfile]?.[k]||"m";c.dataset.size=s;let b=c.querySelector(".widget-size-btn");if(!b){b=document.createElement("button");b.type="button";b.className="widget-size-btn";b.title="Widget mérete: S / M / L";c.appendChild(b)}b.textContent=sizeLabel(s);b.dataset.resizeWidget=k})}
+function applyWidgetLayout(){const p=currentProfile(),d=$("#dashboard");p.widgetOrder.forEach(n=>{const c=$(`[data-widget="${n}"]`);if(c)d.appendChild(c)});Object.entries(p.widgetVisibility).forEach(([n,v])=>$(`[data-widget="${n}"]`)?.classList.toggle("hidden-widget",!v));applyWidgetSizes()}
+function applyProfileTabs(){const nav=$("#profileTabs");device.profileOrder.forEach(k=>{const b=$(`.profile-tab[data-profile="${k}"]`,nav);if(b)nav.appendChild(b)});const vb=$('.profile-tab[data-profile="vio"]',nav);if(vb){vb.hidden=!device.vioVisible;nav.appendChild(vb)}$$('.profile-tab',nav).forEach(b=>b.classList.toggle("active",b.dataset.profile===state.activeProfile))}
 function renderProfile(){
-  $$(".profile-tab").forEach(b=>b.classList.toggle("active",b.dataset.profile===state.activeProfile));const vio=state.activeProfile==="vio";$("#normalView").hidden=vio;$("#vioView").hidden=!vio;$("#currentProfileName").textContent=PROFILE_LABELS[state.activeProfile];
-  if(vio){resetVioDay();renderVio();return}applyWidgetLayout();renderTodos();renderLinks();renderWidgetToggles();$("#todoTitle").textContent=`${PROFILE_LABELS[state.activeProfile]} teendők`;$("#linksTitle").textContent=`${PROFILE_LABELS[state.activeProfile]} gyorsindítás`
+  applyProfileTabs();const vio=state.activeProfile==="vio";$("#normalView").hidden=vio;$("#vioView").hidden=!vio;$("#currentProfileName").textContent=PROFILE_LABELS[state.activeProfile];
+  if(vio){resetVioDay();renderVio();return}applyWidgetLayout();renderTodos();renderLinks();renderAgenda();renderWidgetToggles();$("#todoTitle").textContent=`${PROFILE_LABELS[state.activeProfile]} teendők`;$("#linksTitle").textContent=`${PROFILE_LABELS[state.activeProfile]} gyorsindítás`
 }
-function switchProfile(p){if(!PROFILE_LABELS[p]||p===state.activeProfile)return;if(p!=="vio")stopVioPlayback();state.activeProfile=p;saveState();renderProfile()}
+function switchProfile(p){if(!PROFILE_LABELS[p]||p===state.activeProfile)return;if(p==="vio"&&!device.vioVisible)return;if(p!=="vio")stopVioPlayback();state.activeProfile=p;saveState({cloud:false,snapshot:false});renderProfile()}
 
 /* search */
 function runSearch(raw){let q=raw.trim();if(!q)return;let engine=state.searchEngine;const parts=q.split(/\s+/),prefix=parts[0].toLowerCase();if(SEARCH_PREFIXES[prefix]&&parts.length>1){engine=SEARCH_PREFIXES[prefix];q=parts.slice(1).join(" ")}const url=(SEARCH_ENGINES[engine]||SEARCH_ENGINES.google)(q);window.open(url,"_blank","noopener,noreferrer")}
@@ -97,19 +107,11 @@ async function loadWeather(){$("#weatherTitle").textContent=`Időjárás – ${s
 
 /* currency */
 const isoDate=d=>d.toISOString().slice(0,10),formatRate=v=>Number(v).toLocaleString(locale,{minimumFractionDigits:2,maximumFractionDigits:2}),formatHuf=v=>Math.round(Number(v)).toLocaleString(locale)+" Ft";
-function applyCurrencyWidgetSizing(){
-  const card=$('[data-widget="currencies"]');
-  if(!card)return;
-  const count=Math.max(1,Math.min(3,state.currencies.length||1));
-  const size=["auto","small","medium","full"].includes(state.currencyWidgetSize)?state.currencyWidgetSize:"auto";
-  card.dataset.currencyCount=String(count);
-  card.dataset.currencySize=size;
-  const select=$("#currencyWidgetSize");
-  if(select)select.value=size;
-}
-function renderCurrencyCards(){applyCurrencyWidgetSizing();$("#currencyGrid").innerHTML=state.currencies.map(c=>`<section class="currency" data-code="${c}"><div class="currency-name">${c} / HUF</div><div class="currency-value-row"><div class="currency-value loading" id="${c}Value">000,00</div><div class="currency-change" id="${c}Change">—</div></div><div class="chart-label">${state.currencyRange} napos grafikon</div><canvas id="${c}Chart"></canvas><div class="currency-calculator"><input class="currency-amount" data-code="${c}" type="number" min="0" step="1" value="${Number(state.currencyAmounts[c]??1000)}"><span>${c}</span><span class="currency-converted" id="${c}Converted">→ …</span></div></section>`).join("");$$("[data-range]",$("#rangeSelector")).forEach(b=>b.classList.toggle("active",+b.dataset.range===state.currencyRange))}
+function applyCurrencyWidgetSizing(){const card=$('[data-widget="currencies"]');if(!card)return;card.dataset.currencyCount=String(Math.max(1,Math.min(3,state.currencies.length||1)));card.dataset.currencySize="v6"}
+function rangeLabel(){return state.currencyRange===365?"1 éves":`${state.currencyRange} napos`}
+function renderCurrencyCards(){applyCurrencyWidgetSizing();$("#currencyGrid").innerHTML=state.currencies.map(c=>`<section class="currency" draggable="true" data-code="${c}"><button class="currency-drag" type="button" title="Húzd a rendezéshez">⋮⋮</button><button class="currency-remove" type="button" data-remove-currency="${c}" title="Deviza eltávolítása">×</button><div class="currency-name">${c} / HUF</div><div class="currency-value-row"><div class="currency-value loading" id="${c}Value">000,00</div><div class="currency-change" id="${c}Change">—</div></div><div class="chart-label">${rangeLabel()} grafikon</div><canvas id="${c}Chart"></canvas><div class="currency-calculator"><input class="currency-amount" data-code="${c}" type="number" min="0" step="1" value="${Number(state.currencyAmounts[c]??1000)}"><span>${c}</span><span class="currency-converted" id="${c}Converted">→ …</span></div></section>`).join("");$$('[data-range]',$("#rangeSelector")).forEach(b=>b.classList.toggle("active",+b.dataset.range===state.currencyRange))}
 function updateCurrencyCalculation(c){const i=$(`#${c}Value`)?.classList.contains("loading")?null:latestRates[c],out=$(`#${c}Converted`),inp=$(`.currency-amount[data-code="${c}"]`);if(out&&inp)out.textContent=i?`→ ${formatHuf((+inp.value||0)*i)}`:"→ —"}
-async function loadCurrency(c){const e=new Date(),s=new Date();s.setDate(e.getDate()-state.currencyRange-10);const r=await fetch(`https://api.frankfurter.dev/v1/${isoDate(s)}..${isoDate(e)}?base=${c}&symbols=HUF`);if(!r.ok)throw 0;const d=await r.json(),pts=Object.entries(d.rates).map(([date,rates])=>({date,value:rates.HUF})).filter(p=>Number.isFinite(p.value)).slice(-state.currencyRange),last=pts.at(-1)?.value,prev=pts.at(-2)?.value??last;if(!last)throw 0;latestRates[c]=last;latestChartData[c]=pts.map(p=>p.value);const diff=last-prev,pct=prev?diff/prev*100:0,v=$(`#${c}Value`),ch=$(`#${c}Change`);v.classList.remove("loading");v.textContent=formatRate(last);ch.classList.toggle("down",diff<0);ch.innerHTML=`${diff>=0?"+":""}${formatRate(diff)}<br>(${pct>=0?"+":""}${pct.toFixed(2).replace(".",",")}%)`;drawChart($(`#${c}Chart`),latestChartData[c],diff<0);updateCurrencyCalculation(c)}
+async function loadCurrency(c){const e=new Date(),s=new Date();s.setDate(e.getDate()-state.currencyRange-5);const r=await fetch(`https://api.frankfurter.dev/v1/${isoDate(s)}..${isoDate(e)}?base=${c}&symbols=HUF`);if(!r.ok)throw 0;const d=await r.json(),pts=Object.entries(d.rates).map(([date,rates])=>({date,value:rates.HUF})).filter(p=>Number.isFinite(p.value)),last=pts.at(-1)?.value,prev=pts.at(-2)?.value??last;if(!last)throw 0;latestRates[c]=last;latestChartData[c]=pts.map(p=>p.value);const diff=last-prev,pct=prev?diff/prev*100:0,v=$(`#${c}Value`),ch=$(`#${c}Change`);v.classList.remove("loading");v.textContent=formatRate(last);ch.classList.toggle("down",diff<0);ch.innerHTML=`${diff>=0?"+":""}${formatRate(diff)}<br>(${pct>=0?"+":""}${pct.toFixed(2).replace(".",",")}%)`;drawChart($(`#${c}Chart`),latestChartData[c],diff<0);updateCurrencyCalculation(c)}
 async function loadCurrencies(){renderCurrencyCards();try{await Promise.all(state.currencies.map(loadCurrency));$("#currencyUpdated").textContent=`Frissítve: ${new Date().toLocaleTimeString(locale,{hour:"2-digit",minute:"2-digit"})}`}catch{$("#currencyUpdated").textContent="Az árfolyamadat nem érhető el";state.currencies.forEach(c=>{const e=$(`#${c}Value`);if(e){e.classList.remove("loading");e.textContent="—"}})}}
 function drawChart(canvas,values,down){if(!canvas||values.length<2)return;const ratio=devicePixelRatio||1,rect=canvas.getBoundingClientRect();canvas.width=Math.max(250,rect.width*ratio);canvas.height=145*ratio;const x=canvas.getContext("2d");x.scale(ratio,ratio);const w=canvas.width/ratio,h=canvas.height/ratio,p={l:4,r:4,t:12,b:14},min=Math.min(...values),max=Math.max(...values),range=max-min||1,pts=values.map((v,i)=>({x:p.l+i*((w-p.l-p.r)/Math.max(1,values.length-1)),y:p.t+(max-v)/range*(h-p.t-p.b)})),style=getComputedStyle(document.documentElement),line=down?style.getPropertyValue("--danger").trim():style.getPropertyValue("--accent").trim();x.clearRect(0,0,w,h);x.strokeStyle=getComputedStyle(document.body).getPropertyValue("--border").trim()||"rgba(255,255,255,.08)";for(let i=1;i<4;i++){const y=p.t+i*((h-p.t-p.b)/4);x.beginPath();x.moveTo(0,y);x.lineTo(w,y);x.stroke()}const g=x.createLinearGradient(0,p.t,0,h);g.addColorStop(0,alpha(line,.18));g.addColorStop(1,alpha(line,0));x.beginPath();x.moveTo(pts[0].x,h-p.b);pts.forEach(q=>x.lineTo(q.x,q.y));x.lineTo(pts.at(-1).x,h-p.b);x.closePath();x.fillStyle=g;x.fill();x.beginPath();pts.forEach((q,i)=>i?x.lineTo(q.x,q.y):x.moveTo(q.x,q.y));x.strokeStyle=line;x.lineWidth=2.2;x.lineJoin="round";x.lineCap="round";x.stroke()}
 function alpha(c,a){if(c.startsWith("#")){const h=c.slice(1),v=h.length===3?h.split("").map(z=>z+z).join(""):h,n=parseInt(v,16);return`rgba(${(n>>16)&255},${(n>>8)&255},${n&255},${a})`}return c}
@@ -124,6 +126,10 @@ function renderLinks(){const links=currentProfile().links;$("#quickGrid").innerH
 function initLinkDrag(){let id=null;$$(".link-drag").forEach(h=>{h.addEventListener("dragstart",e=>{id=h.closest(".quick-link").dataset.id;h.closest(".quick-link").classList.add("link-dragging");e.dataTransfer.setData("text/plain",id)});h.addEventListener("dragend",()=>{$$(".quick-link").forEach(r=>r.classList.remove("link-dragging","link-drop-target"));id=null})});$$(".quick-link").forEach(t=>{t.addEventListener("dragover",e=>{if(!id||t.dataset.id===id)return;e.preventDefault();t.classList.add("link-drop-target")});t.addEventListener("dragleave",()=>t.classList.remove("link-drop-target"));t.addEventListener("drop",e=>{e.preventDefault();const a=currentProfile().links,i=a.findIndex(x=>x.id===id),j=a.findIndex(x=>x.id===t.dataset.id);if(i<0||j<0||i===j)return;const[m]=a.splice(i,1);a.splice(j,0,m);saveState();renderLinks()})})}
 function openLink(l=null){$("#linkId").value=l?.id||"";$("#linkName").value=l?.name||"";$("#linkUrl").value=l?.url||"https://";$("#linkIcon").value=l?.icon||"";$("#linkDialogTitle").textContent=l?"Hivatkozás szerkesztése":"Új hivatkozás";$("#deleteLinkBtn").hidden=!l;$("#linkDialog").showModal()}
 
+
+/* agenda */
+function renderAgenda(){const list=$("#agendaList");if(!list||!NORMAL_PROFILES.includes(state.activeProfile))return;const today=todayKey(),items=[...(currentProfile().agenda||[])].sort((a,b)=>(a.date||"9999-99-99").localeCompare(b.date||"9999-99-99"));const shown=items.filter(x=>agendaView==="all"||agendaView==="today"?agendaView!=="today"||x.date===today:(x.date||"")>=today);list.innerHTML=shown.length?shown.map(x=>{const label=!x.date?"Dátum nélkül":x.date===today?"Ma":new Date(`${x.date}T12:00:00`).toLocaleDateString(locale,{month:"short",day:"numeric",weekday:"short"});return`<div class="agenda-item" data-agenda-id="${x.id}"><span class="agenda-date">${esc(label)}</span><span class="agenda-text">${esc(x.text)}</span><button type="button" class="agenda-delete" data-delete-agenda="${x.id}" title="Törlés">×</button></div>`}).join(""):'<div class="agenda-empty">Nincs bejegyzés ebben a nézetben.</div>';$$('[data-agenda-view]').forEach(b=>b.classList.toggle('active',b.dataset.agendaView===agendaView))}
+function addAgenda(text,date){currentProfile().agenda=currentProfile().agenda||[];currentProfile().agenda.push({id:uuid(),text,date:date||""});saveState();renderAgenda()}
 
 /* focus */
 let timerMode="stopwatch",stopwatchStart=0,stopwatchElapsed=0,stopwatchRunning=false,timerFrame=null,lapNumber=0;
@@ -222,14 +228,14 @@ async function refreshCloud(){$("#cloudUrlInput").value=state.cloud.url||"";$("#
 function cloudSignOut(){setCloudSession(null);state.cloud.enabled=false;saveState({cloud:false});$("#cloudStatus").textContent="Nincs bejelentkezve.";$("#cloudSnapshots").innerHTML="";toast("Kijelentkezve")}
 
 /* settings + backup */
-function populateSettings(){$("#cityInput").value=state.city.name;$("#currenciesInput").value=state.currencies.join(", ");$("#currencyWidgetSize").value=state.currencyWidgetSize||"auto";$("#currentProfileName").textContent=PROFILE_LABELS[state.activeProfile];renderWidgetToggles();refreshCloud()}
+function populateSettings(){$("#cityInput").value=state.city.name;$("#currenciesInput").value=state.currencies.join(", ");$("#currentProfileName").textContent=PROFILE_LABELS[state.activeProfile];$("#defaultProfileSelect").value=device.defaultProfile;$("#vioVisibleToggle").checked=device.vioVisible;renderWidgetToggles();refreshCloud()}
 function openSettings(){populateSettings();$("#settingsPanel").classList.add("open");$("#settingsPanel").setAttribute("aria-hidden","false");$("#overlay").classList.add("show")}
 function closeSettings(){$("#settingsPanel").classList.remove("open");$("#settingsPanel").setAttribute("aria-hidden","true");$("#overlay").classList.remove("show")}
 async function saveCity(){const q=$("#cityInput").value.trim();if(!q)return;toast("Város keresése…");try{const r=await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=5&language=hu&format=json`);if(!r.ok)throw 0;const x=(await r.json()).results?.[0];if(!x)return toast("Nem találtam ilyen várost");state.city={name:x.name,latitude:x.latitude,longitude:x.longitude,timezone:x.timezone||"auto"};saveState();await loadWeather();toast(`Mentve: ${state.city.name}`)}catch{toast("A városkeresés sikertelen")}}
 function saveCurrencies(){const a=$("#currenciesInput").value.split(",").map(v=>v.trim().toUpperCase()).filter(v=>/^[A-Z]{3}$/.test(v)).slice(0,3);if(!a.length)return toast("Adj meg legalább egy devizakódot");state.currencies=[...new Set(a)];state.currencies.forEach(c=>{if(state.currencyAmounts[c]==null)state.currencyAmounts[c]=1000});saveState();applyCurrencyWidgetSizing();loadCurrencies();toast("Devizák mentve")}
-function exportSettings(){saveLocalSnapshot();const b=new Blob([JSON.stringify(state,null,2)],{type:"application/json"}),u=URL.createObjectURL(b),a=document.createElement("a");a.href=u;a.download=`lapiit-startpage-v5-${new Date().toISOString().slice(0,10)}.json`;a.click();URL.revokeObjectURL(u)}
+function exportSettings(){saveLocalSnapshot();const b=new Blob([JSON.stringify(state,null,2)],{type:"application/json"}),u=URL.createObjectURL(b),a=document.createElement("a");a.href=u;a.download=`lapiit-startpage-v6-${new Date().toISOString().slice(0,10)}.json`;a.click();URL.revokeObjectURL(u)}
 async function importSettings(file){try{saveLocalSnapshot();state=migrate({value:JSON.parse(await file.text())});saveState({cloud:false,snapshot:false});initUi();await Promise.all([loadWeather(),loadCurrencies()]);toast("Beállítások importálva")}catch{toast("A fájl nem importálható")}}
-function resetAll(){if(!confirm("Minden helyi beállítás, teendő, link és Vio-adat törlődik. Folytatod?"))return;saveLocalSnapshot();state=clone(DEFAULT_STATE);state.vio.day=todayKey();saveState({cloud:false,snapshot:false});initUi();loadWeather();loadCurrencies();closeSettings();toast("Alaphelyzet visszaállítva")}
+function resetAll(){if(!confirm("Minden helyi beállítás, teendő, link és Vio-adat törlődik. Folytatod?"))return;saveLocalSnapshot();state=clone(DEFAULT_STATE);device=clone(DEFAULT_DEVICE);localStorage.removeItem(CUSTOM_BG_KEY);state.vio.day=todayKey();saveDevice();saveState({cloud:false,snapshot:false});initUi();loadWeather();loadCurrencies();closeSettings();toast("Alaphelyzet visszaállítva")}
 function initCardDrag(){let dragged=null;$$(".card").forEach(c=>{c.addEventListener("dragstart",e=>{if(e.target.closest(".link-drag,.todo-drag,input,button,select")){e.preventDefault();return}dragged=c;c.classList.add("dragging");e.dataTransfer.effectAllowed="move"});c.addEventListener("dragend",()=>{dragged?.classList.remove("dragging");dragged=null;if(NORMAL_PROFILES.includes(state.activeProfile)){currentProfile().widgetOrder=$$(".card",$("#dashboard")).map(x=>x.dataset.widget);saveState()}});c.addEventListener("dragover",e=>{e.preventDefault();if(!dragged||dragged===c)return;const r=c.getBoundingClientRect();$("#dashboard").insertBefore(dragged,e.clientY>r.top+r.height/2?c.nextSibling:c)})})}
 async function cleanupLegacyPwa(){
   try{
@@ -244,11 +250,12 @@ async function cleanupLegacyPwa(){
     }
   }catch{}
 }
-function initUi(){applyAppearance();renderProfile();renderCurrencyCards();setTimerMode(timerMode)}
+function initUi(){applyAppearance();renderProfile();renderCurrencyCards();setTimerMode(timerMode);applyProfileTabs()}
 
 
 /* events */
-$$(".profile-tab").forEach(b=>b.addEventListener("click",()=>switchProfile(b.dataset.profile)));
+$("#profileTabs").addEventListener("click",e=>{const b=e.target.closest(".profile-tab");if(b)switchProfile(b.dataset.profile)});
+let profileDrag=null;$("#profileTabs").addEventListener("dragstart",e=>{const b=e.target.closest('.profile-tab[data-profile]:not([data-profile="vio"])');if(!b)return;profileDrag=b.dataset.profile;b.classList.add("dragging")});$("#profileTabs").addEventListener("dragend",e=>{e.target.closest(".profile-tab")?.classList.remove("dragging");profileDrag=null});$("#profileTabs").addEventListener("dragover",e=>{const over=e.target.closest('.profile-tab[data-profile]:not([data-profile="vio"])');if(!profileDrag||!over||over.dataset.profile===profileDrag)return;e.preventDefault();const order=[...device.profileOrder],from=order.indexOf(profileDrag),to=order.indexOf(over.dataset.profile);order.splice(from,1);order.splice(to,0,profileDrag);device.profileOrder=order;saveDevice();applyProfileTabs()});
 $("#searchForm").addEventListener("submit",e=>{e.preventDefault();runSearch($("#searchInput").value)});
 $("#searchEngine").addEventListener("change",e=>{state.searchEngine=e.target.value;saveState()});
 document.addEventListener("keydown",e=>{const typing=e.target.matches?.("input,textarea,select");if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="k"){e.preventDefault();if(!$("#normalView").hidden)$("#searchInput").focus()}else if(e.key==="/"&&!typing&&!$("#normalView").hidden){e.preventDefault();$("#searchInput").focus()}});
@@ -258,6 +265,10 @@ $("#todoList").addEventListener("click",e=>{const row=e.target.closest(".todo");
 $("#todoEditForm").addEventListener("submit",e=>{e.preventDefault();const t=currentProfile().todos.find(x=>x.id===$("#todoEditId").value);if(t){t.text=$("#todoEditText").value.trim()||t.text;saveState();renderTodos()}$("#todoDialog").close()});
 $("#todoDeleteBtn").addEventListener("click",()=>{const id=$("#todoEditId").value;currentProfile().todos=currentProfile().todos.filter(x=>x.id!==id);saveState();renderTodos();$("#todoDialog").close()});
 $("#clearDoneBtn").addEventListener("click",()=>{currentProfile().todos=currentProfile().todos.filter(t=>!t.done);saveState();renderTodos()});
+$("#dashboard").addEventListener("click",e=>{const b=e.target.closest(".widget-size-btn");if(!b||!NORMAL_PROFILES.includes(state.activeProfile))return;e.preventDefault();e.stopPropagation();const k=b.dataset.resizeWidget,cur=device.widgetSizes[state.activeProfile]?.[k]||"m",next=cur==="s"?"m":cur==="m"?"l":"s";device.widgetSizes[state.activeProfile]??={};device.widgetSizes[state.activeProfile][k]=next;saveDevice();applyWidgetSizes();requestAnimationFrame(()=>{if(k==="currencies")loadCurrencies()})});
+$("#agendaForm").addEventListener("submit",e=>{e.preventDefault();const t=$("#agendaText").value.trim();if(!t)return;addAgenda(t,$("#agendaDate").value);$("#agendaText").value=""});
+$("#agendaList").addEventListener("click",e=>{const id=e.target.dataset.deleteAgenda;if(!id)return;currentProfile().agenda=(currentProfile().agenda||[]).filter(x=>x.id!==id);saveState();renderAgenda()});
+$$('[data-agenda-view]').forEach(b=>b.addEventListener('click',()=>{agendaView=b.dataset.agendaView;renderAgenda()}));
 
 $("#addLinkBtn").addEventListener("click",()=>openLink());
 $("#quickGrid").addEventListener("click",e=>{const m=e.target.closest(".link-menu");if(!m)return;e.preventDefault();e.stopPropagation();const id=m.closest(".quick-link").dataset.id;openLink(currentProfile().links.find(x=>x.id===id))});
@@ -266,6 +277,8 @@ $("#deleteLinkBtn").addEventListener("click",()=>{const id=$("#linkId").value;cu
 
 $("#rangeSelector").addEventListener("click",e=>{const b=e.target.closest("button[data-range]");if(!b)return;state.currencyRange=+b.dataset.range;saveState();loadCurrencies()});
 $("#currencyGrid").addEventListener("input",e=>{const i=e.target.closest(".currency-amount");if(!i)return;state.currencyAmounts[i.dataset.code]=+i.value||0;saveState({snapshot:false});updateCurrencyCalculation(i.dataset.code)});
+$("#currencyGrid").addEventListener("click",e=>{const code=e.target.dataset.removeCurrency;if(!code)return;if(state.currencies.length<=1)return toast("Legalább egy deviza maradjon");state.currencies=state.currencies.filter(x=>x!==code);saveState();loadCurrencies()});
+$("#currencyGrid").addEventListener("dragstart",e=>{const c=e.target.closest('.currency');if(!c)return;currencyDragCode=c.dataset.code;c.classList.add('currency-dragging')});$("#currencyGrid").addEventListener("dragend",e=>{e.target.closest('.currency')?.classList.remove('currency-dragging');currencyDragCode=null});$("#currencyGrid").addEventListener("dragover",e=>{const over=e.target.closest('.currency');if(!currencyDragCode||!over||over.dataset.code===currencyDragCode)return;e.preventDefault();const order=[...state.currencies],from=order.indexOf(currencyDragCode),to=order.indexOf(over.dataset.code);order.splice(from,1);order.splice(to,0,currencyDragCode);state.currencies=order;saveState();renderCurrencyCards();state.currencies.forEach(c=>latestChartData[c]&&drawChart($(`#${c}Chart`),latestChartData[c],$(`#${c}Change`)?.classList.contains("down")))});
 
 $$(".focus-tabs button").forEach(b=>b.addEventListener("click",()=>setTimerMode(b.dataset.mode)));
 $("#startTimer").addEventListener("click",()=>{cancelAnimationFrame(timerFrame);if(timerMode==="stopwatch"){if(stopwatchRunning){stopwatchElapsed+=performance.now()-stopwatchStart;stopwatchRunning=false;$("#startTimer").textContent="Start"}else{stopwatchStart=performance.now();stopwatchRunning=true;$("#startTimer").textContent="Szünet"}}else{if(pomodoroRunning){pomodoroRemaining=Math.max(0,pomodoroEnd-Date.now());pomodoroRunning=false;$("#startTimer").textContent="Start"}else{pomodoroEnd=Date.now()+pomodoroRemaining;pomodoroRunning=true;$("#startTimer").textContent="Szünet"}}tickFocus()});
@@ -276,20 +289,18 @@ $("#settingsBtn").addEventListener("click",openSettings);$("#closeSettingsBtn").
 $("#themeSelect").addEventListener("change",e=>{state.theme=e.target.value;saveState();applyAppearance();loadCurrencies()});
 $("#densitySelect").addEventListener("change",e=>{state.density=e.target.value;saveState();applyAppearance();loadCurrencies()});
 $("#backgroundSelect").addEventListener("change",e=>setBackground(e.target.value));
-$("#backgroundDimRange").addEventListener("input",e=>{state.backgroundDim=+e.target.value;saveState({snapshot:false});applyAppearance()});
-$("#autoBackgroundToggle").addEventListener("change",e=>{state.autoRotateBackground=e.target.checked;saveState();configureBackgroundRotation()});
-$("#randomBackgroundToggle").addEventListener("change",e=>{state.randomBackground=e.target.checked;saveState()});
-$("#motionToggle").addEventListener("change",e=>{state.backgroundMotion=e.target.checked;saveState();applyAppearance()});
+$("#backgroundDimRange").addEventListener("input",e=>{device.backgroundDim=+e.target.value;saveDevice();applyAppearance()});
+$("#backgroundBlurRange").addEventListener("input",e=>{device.backgroundBlur=+e.target.value;saveDevice();applyAppearance()});
+$("#customBackgroundFile").addEventListener("change",e=>{const f=e.target.files?.[0];if(!f)return;if(f.size>2.5*1024*1024){toast("A háttérkép legyen 2,5 MB alatt");e.target.value="";return}const r=new FileReader();r.onload=()=>{try{localStorage.setItem(CUSTOM_BG_KEY,r.result);device.background="custom";saveDevice();applyAppearance();toast("Saját háttér beállítva")}catch{toast("A kép túl nagy a böngésző helyi tárhelyéhez")}};r.readAsDataURL(f);e.target.value=""});
+$("#clearCustomBackgroundBtn").addEventListener("click",()=>{localStorage.removeItem(CUSTOM_BG_KEY);if(device.background==="custom")device.background="aurora";saveDevice();applyAppearance();toast("Saját háttér törölve")});
 $("#glassRange").addEventListener("input",e=>{state.glass=+e.target.value;saveState({snapshot:false});applyAppearance()});
 $("#quoteInput").addEventListener("change",e=>{state.quote=e.target.value.trim()||DEFAULT_STATE.quote;saveState();applyAppearance()});
 $("#widgetToggles").addEventListener("change",e=>{const k=e.target.dataset.widgetToggle;if(!k||!NORMAL_PROFILES.includes(state.activeProfile))return;currentProfile().widgetVisibility[k]=e.target.checked;saveState();applyWidgetLayout()});
+$("#defaultProfileSelect").addEventListener("change",e=>{device.defaultProfile=e.target.value;saveDevice();toast(`Ezen a gépen a ${PROFILE_LABELS[device.defaultProfile]} lesz az induló munkatér`)});
+$("#vioVisibleToggle").addEventListener("change",e=>{device.vioVisible=e.target.checked;if(!device.vioVisible&&state.activeProfile==="vio")switchProfile(device.defaultProfile);saveDevice();applyProfileTabs()});
+$("#resetWorkspaceOrderBtn").addEventListener("click",()=>{device.profileOrder=clone(DEFAULT_DEVICE.profileOrder);saveDevice();applyProfileTabs();toast("Munkatérsorrend visszaállítva")});
 $("#saveCityBtn").addEventListener("click",saveCity);$("#saveCurrenciesBtn").addEventListener("click",saveCurrencies);
-$("#currencyWidgetSize").addEventListener("change",e=>{
-  state.currencyWidgetSize=e.target.value;
-  saveState();
-  applyCurrencyWidgetSizing();
-  requestAnimationFrame(()=>loadCurrencies());
-});
+
 $("#exportBtn").addEventListener("click",exportSettings);$("#importBtn").addEventListener("click",()=>$("#importFile").click());$("#importFile").addEventListener("change",e=>{const f=e.target.files?.[0];if(f)importSettings(f);e.target.value=""});$("#restoreLocalBtn").addEventListener("click",restoreLastLocalSnapshot);$("#resetAllBtn").addEventListener("click",resetAll);
 $("#refreshBtn").addEventListener("click",async()=>{toast("Adatok frissítése…");await Promise.all([loadWeather(),loadCurrencies()]);toast("Frissítve")});$("#bgNextBtn").addEventListener("click",nextBackground);$("#fullscreenBtn").addEventListener("click",()=>document.fullscreenElement?document.exitFullscreen?.():document.documentElement.requestFullscreen?.());
 
@@ -315,5 +326,4 @@ window.addEventListener("resize",()=>{clearTimeout(window.__chartResizeTimer);wi
 window.addEventListener("beforeunload",()=>{stopVioTicker();saveState({cloud:false,snapshot:false})});
 
 /* boot */
-if(state.randomBackground){const a=BACKGROUNDS.filter(x=>x!==state.background);state.background=a[Math.floor(Math.random()*a.length)]||state.background}
-resetVioDay();saveState({cloud:false,snapshot:false});initUi();initCardDrag();updateClock();setInterval(updateClock,1000);loadWeather();loadCurrencies();setInterval(loadWeather,1200000);setInterval(loadCurrencies,3600000);cleanupLegacyPwa();
+resetVioDay();saveState({cloud:false,snapshot:false});saveDevice();initUi();initCardDrag();updateClock();loadNameday();setInterval(updateClock,1000);setInterval(loadNameday,21600000);loadWeather();loadCurrencies();setInterval(loadWeather,1200000);setInterval(loadCurrencies,3600000);cleanupLegacyPwa();

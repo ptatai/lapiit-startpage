@@ -4,10 +4,10 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#071018">
-  <meta name="description" content="Lapiit Startpage V5.5 – többprofilos személyes kezdőoldal Vio videóválasztóval és háttéradaptív felülettel.">
+  <meta name="description" content="Lapiit Startpage V6 – letisztult, eszközönként testreszabható személyes dashboard.">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="styles.css">
-  <title>Lapiit Startpage V5.5.2</title>
+  <title>Lapiit Startpage V6</title>
 </head>
 <body data-theme="midnight" data-background="mountains" data-density="normal">
   <div class="background-stage" aria-hidden="true">
@@ -17,15 +17,15 @@
   </div>
   <main class="page">
     <header class="topbar">
-      <div><div id="clock" class="clock">--:--</div><div id="date" class="date">Betöltés…</div></div>
+      <div><div id="clock" class="clock">--:--</div><div id="date" class="date">Betöltés…</div><div id="nameday" class="nameday">Névnap: betöltés…</div></div>
       <div class="top-actions">
         <button class="icon-btn" id="refreshBtn" title="Frissítés">↻</button><button class="icon-btn" id="bgNextBtn" title="Következő háttér">◫</button>
         <button class="icon-btn" id="settingsBtn" title="Beállítások">⚙</button><button class="icon-btn" id="fullscreenBtn" title="Teljes képernyő">⛶</button>
       </div>
     </header>
-    <nav class="profile-tabs" aria-label="Profilok">
-      <button class="profile-tab active" data-profile="general">Általános</button><button class="profile-tab" data-profile="study">Tanulás</button>
-      <button class="profile-tab" data-profile="work">Munka</button><button class="profile-tab vio-tab" data-profile="vio">Vio</button>
+    <nav id="profileTabs" class="profile-tabs" aria-label="Munkaterek">
+      <button class="profile-tab active" draggable="true" data-profile="general">Home</button><button class="profile-tab" draggable="true" data-profile="study">Focus</button>
+      <button class="profile-tab" draggable="true" data-profile="work">Work</button><button class="profile-tab vio-tab" data-profile="vio">Vio</button>
     </nav>
     <section id="normalView">
       <form id="searchForm" class="search-shell" role="search">
@@ -40,7 +40,7 @@
           <div class="weather-advice"><span class="advice-icon">✦</span><span id="weatherAdviceText">Az ajánlás betöltése…</span></div><div id="forecast" class="forecast"></div>
         </div></article>
         <article class="card currencies-card" draggable="true" data-widget="currencies"><div class="drag-handle">⋮⋮</div><div class="card-inner">
-          <div class="card-title currency-header"><span>Devizaárfolyamok</span><div class="currency-tools"><div class="segmented" id="rangeSelector"><button type="button" data-range="7">7 nap</button><button type="button" data-range="30" class="active">30 nap</button><button type="button" data-range="90">90 nap</button></div><span id="currencyUpdated" class="small-muted">Betöltés…</span></div></div><div id="currencyGrid" class="currency-grid"></div>
+          <div class="card-title currency-header"><span>Devizaárfolyamok</span><div class="currency-tools"><div class="segmented" id="rangeSelector"><button type="button" data-range="7">7 nap</button><button type="button" data-range="30" class="active">30 nap</button><button type="button" data-range="90">90 nap</button><button type="button" data-range="365">1 év</button></div><span id="currencyUpdated" class="small-muted">Betöltés…</span></div></div><div id="currencyGrid" class="currency-grid"></div>
         </div></article>
         <article class="card todos-card" draggable="true" data-widget="todos"><div class="drag-handle">⋮⋮</div><div class="card-inner">
           <div class="card-title"><span id="todoTitle">Teendők</span><div class="title-actions"><button id="clearDoneBtn" class="text-btn" type="button">Kész törlése</button><span id="todoCount" class="small-muted"></span></div></div>
@@ -48,6 +48,12 @@
         </div></article>
         <article class="card links-card" draggable="true" data-widget="links"><div class="drag-handle">⋮⋮</div><div class="card-inner">
           <div class="card-title"><span id="linksTitle">Gyorsindítás</span><span class="small-muted">húzással rendezhető</span></div><div id="quickGrid" class="quick-grid"></div><button id="addLinkBtn" class="quick-add" type="button">＋ Új hivatkozás</button>
+        </div></article>
+
+        <article class="card agenda-card" draggable="true" data-widget="agenda"><div class="drag-handle">⋮⋮</div><div class="card-inner">
+          <div class="card-title"><span>Agenda</span><div class="segmented agenda-tabs"><button type="button" data-agenda-view="today">Ma</button><button type="button" data-agenda-view="upcoming" class="active">Közelgő</button><button type="button" data-agenda-view="all">Összes</button></div></div>
+          <div id="agendaList" class="agenda-list"></div>
+          <form id="agendaForm" class="agenda-add"><input id="agendaText" autocomplete="off" placeholder="Jegyzet / esemény…" required><input id="agendaDate" type="date"><button type="submit">+</button></form>
         </div></article>
         <article class="card focus-card" draggable="true" data-widget="focus"><div class="drag-handle">⋮⋮</div><div class="card-inner">
           <div class="card-title"><span>Fókusz</span><div class="segmented focus-tabs"><button type="button" class="active" data-mode="stopwatch">Stopper</button><button type="button" data-mode="pomodoro">Pomodoro</button></div></div>
@@ -64,10 +70,21 @@
     <footer class="footer"><span id="quoteText">„Fókuszálj a haladásra, ne a tökéletességre.”</span></footer>
   </main>
   <aside id="settingsPanel" class="settings-panel" aria-hidden="true"><div class="settings-header"><div><h2>Beállítások</h2><p>Helyi mentés automatikus; a felhő opcionális.</p></div><button id="closeSettingsBtn" class="icon-btn">×</button></div><div class="settings-content">
-    <section class="settings-section"><h3>Megjelenés</h3><label>Téma<select id="themeSelect"><option value="midnight">Dark</option><option value="light">Light</option></select></label><label>Widgetméret<select id="densitySelect"><option value="normal">Normál</option><option value="compact">Kompakt</option></select></label><label>Animált háttér<select id="backgroundSelect"><option value="mountains">Ködös hegyek</option><option value="aurora">Északi fény</option><option value="stars">Csillagos ég</option><option value="rain">Esős ablak</option><option value="waves">Absztrakt hullámok</option></select></label><label>Háttér sötétítése<input id="backgroundDimRange" type="range" min="10" max="78"></label><label class="toggle-item"><span>Automatikus háttérváltás</span><input id="autoBackgroundToggle" type="checkbox"></label><label class="toggle-item"><span>Véletlen háttér induláskor</span><input id="randomBackgroundToggle" type="checkbox"></label><label class="toggle-item"><span>Mozgó háttér</span><input id="motionToggle" type="checkbox"></label><label>Üveghatás<input id="glassRange" type="range" min="55" max="94"></label><label>Idézet<input id="quoteInput"></label></section>
-    <section class="settings-section"><h3>Aktuális profil: <span id="currentProfileName">Általános</span></h3><p class="hint">A widgetek láthatósága profilonként külön mentődik.</p><div id="widgetToggles" class="toggle-list"></div></section>
+    <section class="settings-section"><h3>Megjelenés</h3>
+      <label>Téma<select id="themeSelect"><option value="midnight">Dark</option><option value="light">Light</option></select></label>
+      <label>Sűrűség<select id="densitySelect"><option value="normal">Normál</option><option value="compact">Kompakt</option></select></label>
+      <label>Statikus háttér<select id="backgroundSelect"><option value="aurora">Aurora</option><option value="mountains">Ködös hegyek</option><option value="stars">Csillagos ég</option><option value="abstract">Sötét absztrakt</option><option value="sunrise">Hajnali táj</option><option value="custom">Saját kép</option></select></label>
+      <label>Háttér sötétítése<input id="backgroundDimRange" type="range" min="10" max="78"></label>
+      <label>Háttér elmosása<input id="backgroundBlurRange" type="range" min="0" max="12" step="1"></label>
+      <label>Saját háttérkép<input id="customBackgroundFile" type="file" accept="image/jpeg,image/png,image/webp"></label>
+      <button id="clearCustomBackgroundBtn" type="button">Saját háttér törlése</button>
+      <label>Üveghatás<input id="glassRange" type="range" min="55" max="94"></label>
+      <label>Idézet<input id="quoteInput"></label>
+    </section>
+    <section class="settings-section"><h3>Munkaterek ezen a gépen</h3><p class="hint">A fenti Home / Focus / Work fülek húzással is átrendezhetők. Ezek a beállítások csak ezen az eszközön maradnak.</p><label>Induló munkatér<select id="defaultProfileSelect"><option value="general">Home</option><option value="study">Focus</option><option value="work">Work</option></select></label><label class="toggle-item"><span>Vio fül megjelenítése</span><input id="vioVisibleToggle" type="checkbox"></label><button id="resetWorkspaceOrderBtn" type="button">Alap sorrend visszaállítása</button></section>
+    <section class="settings-section"><h3>Aktuális munkatér: <span id="currentProfileName">Home</span></h3><p class="hint">A widgetek láthatósága profilonként külön mentődik.</p><div id="widgetToggles" class="toggle-list"></div></section>
     <section class="settings-section"><h3>Időjárás</h3><label>Város<input id="cityInput" placeholder="Pécs"></label><button id="saveCityBtn" class="primary-btn" type="button">Város keresése és mentése</button></section>
-    <section class="settings-section"><h3>Devizák</h3><p class="hint">Automatikus méretnél a devizablokk a devizák számához igazodik, így 1–2 devizával az időjárás mellé is kerülhet.</p><label>Devizák<input id="currenciesInput" placeholder="GBP, EUR, USD"></label><label>Deviza widget mérete<select id="currencyWidgetSize"><option value="auto">Automatikus</option><option value="small">Kicsi</option><option value="medium">Közepes</option><option value="full">Teljes szélesség</option></select></label><button id="saveCurrenciesBtn" class="primary-btn" type="button">Devizák mentése</button></section>
+    <section class="settings-section"><h3>Devizák</h3><p class="hint">Automatikus méretnél a devizablokk a devizák számához igazodik, így 1–2 devizával az időjárás mellé is kerülhet.</p><label>Devizák<input id="currenciesInput" placeholder="GBP, EUR, USD"></label><button id="saveCurrenciesBtn" class="primary-btn" type="button">Devizák mentése</button></section>
     <section class="settings-section"><h3>Automatikus felhőmentés</h3><p class="hint">Opcionális Supabase mentés. A jelszót nem tároljuk.</p><label>Project URL<input id="cloudUrlInput" type="url" placeholder="https://xxxxx.supabase.co"></label><label>Publishable / anon key<input id="cloudKeyInput" type="password" autocomplete="off"></label><label>E-mail<input id="cloudEmailInput" type="email" autocomplete="username"></label><label>Jelszó<input id="cloudPasswordInput" type="password" autocomplete="current-password"></label><div class="button-grid cloud-buttons"><button id="cloudSignUpBtn" type="button">Regisztráció</button><button id="cloudSignInBtn" class="primary-btn" type="button">Belépés</button><button id="cloudBackupBtn" type="button">Mentés most</button><button id="cloudRestoreBtn" type="button">Legutóbbi visszaállítása</button><button id="cloudSignOutBtn" type="button">Kilépés</button></div><div id="cloudStatus" class="cloud-status">Nincs bejelentkezve.</div><div id="cloudSnapshots" class="cloud-snapshots"></div></section>
     <section class="settings-section"><h3>Mentés és átvitel</h3><div class="button-grid"><button id="exportBtn" type="button">JSON export</button><button id="importBtn" type="button">JSON import</button><input id="importFile" type="file" accept="application/json" hidden><button id="restoreLocalBtn" type="button">Utolsó helyi mentés</button><button id="resetAllBtn" class="danger-btn" type="button">Alaphelyzet</button></div></section>
   </div></aside><div id="overlay" class="overlay"></div>

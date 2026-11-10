@@ -1192,3 +1192,58 @@ body[data-theme="light"] .search-shell select optgroup {
   color: #f2f6f9 !important;
 }
 
+
+
+/* ==========================================================
+   V6 - static backgrounds, device-local workspaces, resizable widgets
+   ========================================================== */
+.nameday{margin-top:6px;color:var(--ambient-muted,var(--muted));font-size:14px;text-shadow:0 1px 10px rgba(0,0,0,.32)}
+
+/* Backgrounds are deliberately static in V6. */
+.background-effect{animation:none!important}
+.background-base{inset:-2%;animation:none!important;filter:blur(var(--background-blur,0px));transform:scale(1.025);background-size:cover!important;background-position:center!important;transition:filter .2s ease,background .25s ease}
+body[data-background="aurora"] .background-base{background:
+  radial-gradient(ellipse at 58% 5%,rgba(80,255,208,.56),transparent 27%),
+  radial-gradient(ellipse at 34% 3%,rgba(171,79,255,.43),transparent 31%),
+  radial-gradient(ellipse at 50% 105%,rgba(20,72,87,.48),transparent 42%),
+  linear-gradient(180deg,#06101e 0%,#07131d 52%,#031018 100%)}
+body[data-background="stars"] .background-base{background:
+  radial-gradient(circle at 12% 18%,rgba(255,255,255,.82) 0 1px,transparent 1.5px),
+  radial-gradient(circle at 62% 14%,rgba(205,224,255,.72) 0 1px,transparent 1.5px),
+  radial-gradient(circle at 82% 42%,rgba(255,255,255,.58) 0 1px,transparent 1.4px),
+  radial-gradient(circle at 70% 17%,rgba(99,117,183,.25),transparent 24%),
+  linear-gradient(180deg,#040611,#080d19 58%,#061019);background-size:77px 77px,113px 113px,53px 53px,auto,auto!important}
+body[data-background="abstract"] .background-base{background:
+  radial-gradient(circle at 80% 20%,rgba(45,187,161,.23),transparent 28%),
+  radial-gradient(circle at 22% 70%,rgba(101,77,188,.24),transparent 34%),
+  linear-gradient(135deg,#0d1620 0%,#101922 38%,#071219 100%)}
+body[data-background="sunrise"] .background-base{background:
+  radial-gradient(circle at 24% 24%,rgba(255,204,142,.46),transparent 25%),
+  linear-gradient(172deg,transparent 0 56%,rgba(36,49,54,.65) 57% 66%,transparent 67%),
+  linear-gradient(188deg,transparent 0 51%,rgba(12,29,35,.90) 52% 69%,transparent 70%),
+  linear-gradient(180deg,#6d6c82 0%,#8f756d 29%,#344f59 58%,#07151b 100%)}
+body[data-background="custom"] .background-base{background-image:var(--custom-background-image)!important;background-color:#071018!important;background-size:cover!important;background-position:center!important;background-repeat:no-repeat!important}
+
+body[data-background="abstract"]{--chrome-bg:rgba(10,20,27,.78);--chrome-border:rgba(92,205,183,.18)}
+body[data-background="sunrise"]{--chrome-bg:rgba(25,24,31,.74);--chrome-border:rgba(238,204,182,.18)}
+body[data-background="custom"]{--chrome-bg:rgba(8,15,21,.78);--chrome-border:rgba(255,255,255,.16)}
+
+/* draggable workspaces */
+.profile-tab[draggable="true"]{cursor:grab}.profile-tab.dragging{opacity:.45}.profile-tab[hidden]{display:none!important}
+
+/* consistent per-widget S/M/L sizing; last rules win over V5 currency-specific sizing */
+.dashboard>.card[data-size="s"]{flex:1 1 290px!important;max-width:420px!important;min-width:min(100%,270px)!important}
+.dashboard>.card[data-size="m"]{flex:1 1 430px!important;max-width:680px!important;min-width:min(100%,300px)!important}
+.dashboard>.card[data-size="l"]{flex:1 0 min(100%,820px)!important;max-width:none!important;min-width:min(100%,320px)!important}
+.widget-size-btn{position:absolute;right:34px;top:8px;z-index:4;width:27px;height:27px;border:1px solid var(--border);border-radius:8px;background:color-mix(in srgb,var(--panel),transparent 15%);color:var(--muted);font-size:11px;font-weight:800;cursor:pointer;opacity:.34;transition:.2s}
+.card:hover .widget-size-btn{opacity:.9}.widget-size-btn:hover{color:var(--text);border-color:var(--border-strong)}
+.card[data-size="s"] .forecast,.card[data-size="s"] .weather-advice{display:none}.card[data-size="s"] .weather-main{border-bottom:0;padding-bottom:4px}.card[data-size="s"] .weather-details{font-size:12px}
+
+/* Agenda */
+.agenda-card{min-height:300px}.agenda-list{display:grid;gap:8px;max-height:310px;overflow:auto;padding-right:2px}.agenda-item{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;padding:9px 10px;border:1px solid var(--border);border-radius:11px;background:color-mix(in srgb,var(--input-bg),transparent 8%)}.agenda-date{font-size:11px;font-weight:750;color:var(--accent);white-space:nowrap}.agenda-text{min-width:0;overflow:hidden;text-overflow:ellipsis}.agenda-delete{border:0;background:transparent;color:var(--muted);cursor:pointer;font-size:18px}.agenda-empty{padding:24px 10px;color:var(--muted);text-align:center}.agenda-add{display:grid;grid-template-columns:minmax(0,1fr) 145px 40px;gap:8px;margin-top:12px}.agenda-add input,.agenda-add button{border:1px solid var(--border-strong);border-radius:10px;background:var(--input-bg);color:var(--text);padding:9px 10px}.agenda-add button{cursor:pointer;font-size:18px}.agenda-tabs{flex-shrink:0}
+
+/* Currency cards can be reordered/removed directly. */
+.currency{position:relative}.currency-drag,.currency-remove{position:absolute;top:9px;border:0;background:transparent;color:var(--muted);cursor:pointer;z-index:2}.currency-drag{right:34px;cursor:grab;opacity:.55}.currency-remove{right:9px;font-size:18px}.currency-dragging{opacity:.45;outline:1px dashed var(--accent)}
+.currency-grid{grid-template-columns:repeat(auto-fit,minmax(min(100%,235px),1fr))!important}
+
+@media(max-width:760px){.dashboard>.card[data-size]{max-width:none!important;flex:1 1 100%!important}.agenda-add{grid-template-columns:1fr}.widget-size-btn{right:36px}}
