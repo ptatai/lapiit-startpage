@@ -1,3 +1,39 @@
+LAPIIT STARTPAGE – V6.1
+
+V6.1 fő változása: a korábbi CSS-es / generikus háttereket öt valódi, statikus,
+egységesen kiválasztott háttérkép váltja.
+
+HÁTTEREK
+1. Lila–zöld aurora – hegyek, tó, lila és zöld sarki fény; ez az alapértelmezett.
+2. Ködös hegyek – hajnali, ködös hegyvidék.
+3. Csillagos éj – mélykék/lila éjszakai hegyvidék.
+4. Sötét absztrakt – letisztult teal/kék hullámok.
+5. Hajnali táj – világosabb, meleg napfelkeltés hegyvidék.
+6. Saját kép – továbbra is helyileg feltölthető JPG / PNG / WebP.
+
+A hátterek WEBP formátumban vannak a /backgrounds mappában, ezért GitHub Pages-en
+lényegesen ésszerűbb a méretük, mint a generált PNG-ké.
+
+MEGMARADT
+- saját háttér feltöltése
+- háttér sötétítése
+- enyhe blur
+- Home / Focus / Work
+- Vio opcionális, eszközönként elrejthető
+- widget S/M/L méretezés
+- deviza 7 / 30 / 90 nap / 1 év
+- Agenda
+- névnap
+- Supabase és helyi mentés
+
+TELEPÍTÉS
+A V6.1 teljes mappatartalmát töltsd fel a GitHub Pages repository gyökerébe.
+Fontos: a backgrounds mappát is töltsd fel az öt .webp fájllal.
+
+A meglévő V6 / V5 helyi adatok megtartására készült; a háttérbeállítás kulcsai
+nem változtak.
+
+--- Korábbi V6 megjegyzések ---
 LAPIIT STARTPAGE - V6
 
 FŐ VÁLTOZÁSOK
@@ -21,3 +57,4 @@ A V6 tovabbra sem hasznal service workert vagy manifestet.
 
 NÉVNAP
 A kliens a https://www.nevinfo.hu/api/v1/ma vegpontot hasznalja. Ha a szolgaltatas nem erheto el, a dashboard ettol meg mukodik, csak "Névnap: —" jelenik meg.
+

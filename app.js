@@ -19,7 +19,7 @@ const SEARCH_PREFIXES={g:"google",google:"google",ddg:"duckduckgo",d:"duckduckgo
 const uuid=()=>crypto.randomUUID?crypto.randomUUID():`${Date.now()}-${Math.random().toString(16).slice(2)}`;
 const profile=(label,links,extra={})=>({label,todos:[],agenda:[],links,widgetVisibility:{weather:true,currencies:true,todos:true,links:true,agenda:true,focus:true,...extra},widgetOrder:["weather","currencies","todos","links","agenda","focus"]});
 const DEFAULT_STATE={
-  version:6,activeProfile:"general",theme:"midnight",density:"normal",background:"aurora",backgroundDim:42,glass:82,
+  version:6.1,activeProfile:"general",theme:"midnight",density:"normal",background:"aurora",backgroundDim:42,glass:82,
   quote:"„Fókuszálj a haladásra, ne a tökéletességre.”",searchEngine:"google",
   city:{name:"Pécs",latitude:46.0727,longitude:18.2323,timezone:"Europe/Budapest"},
   currencies:["GBP","EUR","USD"],currencyRange:30,currencyWidgetSize:"auto",currencyAmounts:{GBP:1000,EUR:1000,USD:1000},pomodoro:{workMinutes:25,breakMinutes:5},

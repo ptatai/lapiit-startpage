@@ -1247,3 +1247,64 @@ body[data-background="custom"]{--chrome-bg:rgba(8,15,21,.78);--chrome-border:rgb
 .currency-grid{grid-template-columns:repeat(auto-fit,minmax(min(100%,235px),1fr))!important}
 
 @media(max-width:760px){.dashboard>.card[data-size]{max-width:none!important;flex:1 1 100%!important}.agenda-add{grid-template-columns:1fr}.widget-size-btn{right:36px}}
+
+/* ==========================================================
+   V6.1 – GENERATED STATIC BACKGROUND PACK
+   Five curated static images + local custom image.
+   ========================================================== */
+.background-effect {
+  display: none !important;
+}
+
+.background-base {
+  inset: -1.5% !important;
+  background-color: #071018 !important;
+  background-repeat: no-repeat !important;
+  background-size: cover !important;
+  background-position: center center !important;
+  filter: blur(var(--background-blur,0px));
+  transform: scale(1.02);
+}
+
+body[data-background="aurora"] .background-base {
+  background-image: url("backgrounds/aurora-purple-green.webp") !important;
+}
+body[data-background="mountains"] .background-base {
+  background-image: url("backgrounds/misty-mountains.webp") !important;
+}
+body[data-background="stars"] .background-base {
+  background-image: url("backgrounds/starry-night.webp") !important;
+}
+body[data-background="abstract"] .background-base {
+  background-image: url("backgrounds/dark-abstract.webp") !important;
+}
+body[data-background="sunrise"] .background-base {
+  background-image: url("backgrounds/sunrise-landscape.webp") !important;
+}
+body[data-background="custom"] .background-base {
+  background-image: var(--custom-background-image) !important;
+}
+
+/* Small chrome tuning for the actual image palette. */
+body[data-background="aurora"] {
+  --chrome-bg: rgba(7,13,27,.74);
+  --chrome-border: rgba(129,101,232,.22);
+  --chrome-active: rgba(55,202,159,.22);
+}
+body[data-background="mountains"] {
+  --chrome-bg: rgba(13,24,32,.76);
+  --chrome-border: rgba(143,183,196,.19);
+}
+body[data-background="stars"] {
+  --chrome-bg: rgba(8,10,25,.77);
+  --chrome-border: rgba(180,128,221,.19);
+}
+body[data-background="abstract"] {
+  --chrome-bg: rgba(7,21,28,.78);
+  --chrome-border: rgba(65,208,187,.20);
+}
+body[data-background="sunrise"] {
+  --chrome-bg: rgba(26,28,33,.73);
+  --chrome-border: rgba(245,205,163,.20);
+}
+
