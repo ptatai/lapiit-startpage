@@ -3,7 +3,7 @@ const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelect
 const locale="hu-HU";
 const STORAGE_KEY="peterStartpageV6", LEGACY_KEYS=["peterStartpageV5","peterStartpageV4","peterStartpageV3","peterStartpageV2"];
 const DEVICE_KEY="lapiitStartpageDeviceV6", CUSTOM_BG_KEY="lapiitStartpageCustomBackgroundV6", NAMEDAY_CACHE_KEY="lapiitNamedayCacheV1";
-const LOCAL_SNAPSHOTS_KEY="peterStartpageLocalSnapshotsV6", CLOUD_SESSION_KEY="peterStartpageCloudSessionV5";
+const CLOUD_SESSION_KEY="peterStartpageCloudSessionV5", CLOUD_REV_KEY="lapiitStartpageCloudRevisionV1";
 const BACKGROUNDS=["aurora","mountains","stars","abstract","sunrise","custom"];
 const PROFILE_LABELS={general:"Home",study:"Focus",work:"Work",vio:"Vio"};
 const NORMAL_PROFILES=["general","study","work"];
@@ -19,7 +19,7 @@ const SEARCH_PREFIXES={g:"google",google:"google",ddg:"duckduckgo",d:"duckduckgo
 const uuid=()=>crypto.randomUUID?crypto.randomUUID():`${Date.now()}-${Math.random().toString(16).slice(2)}`;
 const profile=(label,links,extra={})=>({label,todos:[],agenda:[],links,widgetVisibility:{weather:true,currencies:true,todos:true,links:true,agenda:true,focus:true,...extra},widgetOrder:["weather","currencies","todos","links","agenda","focus"]});
 const DEFAULT_STATE={
-  version:6.1,activeProfile:"general",theme:"midnight",density:"normal",background:"aurora",backgroundDim:42,glass:82,
+  version:6.4,activeProfile:"general",theme:"midnight",density:"normal",background:"aurora",backgroundDim:42,glass:82,
   quote:"„Fókuszálj a haladásra, ne a tökéletességre.”",searchEngine:"google",
   city:{name:"Pécs",latitude:46.0727,longitude:18.2323,timezone:"Europe/Budapest"},
   currencies:["GBP","EUR","USD"],currencyRange:30,currencyWidgetSize:"auto",currencyAmounts:{GBP:1000,EUR:1000,USD:1000},pomodoro:{workMinutes:25,breakMinutes:5},
@@ -59,16 +59,38 @@ function migrate(info){
 let state=migrate(loadSaved());
 if(!["midnight","light"].includes(state.theme)) state.theme="midnight";
 if(!state.vio.day)state.vio.day=todayKey();
-const DEFAULT_DEVICE={profileOrder:["general","study","work"],defaultProfile:"general",vioVisible:false,widgetSizes:{general:{weather:"m",currencies:"l",todos:"m",links:"m",agenda:"m",focus:"m"},study:{weather:"m",currencies:"l",todos:"m",links:"m",agenda:"m",focus:"m"},work:{weather:"m",currencies:"l",todos:"m",links:"m",agenda:"m",focus:"m"}},background:"aurora",backgroundDim:42,backgroundBlur:0};
-function loadDevice(){try{const d=JSON.parse(localStorage.getItem(DEVICE_KEY)||"null");return d?{...clone(DEFAULT_DEVICE),...d,profileOrder:Array.isArray(d.profileOrder)?d.profileOrder.filter(x=>NORMAL_PROFILES.includes(x)):clone(DEFAULT_DEVICE.profileOrder),widgetSizes:{...clone(DEFAULT_DEVICE.widgetSizes),...(d.widgetSizes||{})}}:clone(DEFAULT_DEVICE)}catch{return clone(DEFAULT_DEVICE)}}
-let device=loadDevice();if(device.profileOrder.length!==3)device.profileOrder=clone(DEFAULT_DEVICE.profileOrder);if(!NORMAL_PROFILES.includes(device.defaultProfile))device.defaultProfile="general";state.activeProfile=device.defaultProfile;
+const DEFAULT_DEVICE={profileOrder:["general","study","work"],defaultProfile:"general",profileVisibility:{general:true,study:true,work:true,vio:false},widgetSizes:{general:{weather:"m",currencies:"l",todos:"m",links:"m",agenda:"m",focus:"m"},study:{weather:"m",currencies:"l",todos:"m",links:"m",agenda:"m",focus:"m"},work:{weather:"m",currencies:"l",todos:"m",links:"m",agenda:"m",focus:"m"}},background:"aurora",backgroundDim:42,backgroundBlur:0};
+function loadDevice(){
+  try{
+    const d=JSON.parse(localStorage.getItem(DEVICE_KEY)||"null");
+    if(!d)return clone(DEFAULT_DEVICE);
+    const visibility={
+      ...clone(DEFAULT_DEVICE.profileVisibility),
+      ...(d.profileVisibility||{})
+    };
+    if(d.vioVisible!==undefined&&d.profileVisibility?.vio===undefined)visibility.vio=!!d.vioVisible;
+    visibility.general=true;
+    return {
+      ...clone(DEFAULT_DEVICE),
+      ...d,
+      profileVisibility:visibility,
+      profileOrder:Array.isArray(d.profileOrder)?d.profileOrder.filter(x=>NORMAL_PROFILES.includes(x)):clone(DEFAULT_DEVICE.profileOrder),
+      widgetSizes:{...clone(DEFAULT_DEVICE.widgetSizes),...(d.widgetSizes||{})}
+    }
+  }catch{return clone(DEFAULT_DEVICE)}
+}
+let device=loadDevice();
+if(device.profileOrder.length!==3)device.profileOrder=clone(DEFAULT_DEVICE.profileOrder);
+const isProfileVisible=p=>p==="general"||!!device.profileVisibility?.[p];
+if(!NORMAL_PROFILES.includes(device.defaultProfile)||!isProfileVisible(device.defaultProfile))device.defaultProfile="general";
+state.activeProfile=device.defaultProfile;
 function saveDevice(){localStorage.setItem(DEVICE_KEY,JSON.stringify(device))}
-let latestRates={},latestChartData={},localSnapshotLastAt=0,cloudBackupTimer=null,lastCloudBackupAt=0,agendaView="upcoming",currencyDragCode=null;
+let latestRates={},latestChartData={},cloudSyncTimer=null,lastCloudSyncAt=0,agendaView="upcoming",currencyDragCode=null;
 const currentProfile=()=>NORMAL_PROFILES.includes(state.activeProfile)?state.profiles[state.activeProfile]:state.profiles.general;
-function getLocalSnapshots(){try{return JSON.parse(localStorage.getItem(LOCAL_SNAPSHOTS_KEY)||"[]")}catch{return[]}}
-function saveLocalSnapshot(){const a=getLocalSnapshots();a.unshift({id:uuid(),createdAt:new Date().toISOString(),state:clone(state)});localStorage.setItem(LOCAL_SNAPSHOTS_KEY,JSON.stringify(a.slice(0,5)))}
-function saveState({snapshot=true,cloud=true}={}){localStorage.setItem(STORAGE_KEY,JSON.stringify(state));const now=Date.now();if(snapshot&&now-localSnapshotLastAt>120000){saveLocalSnapshot();localSnapshotLastAt=now}if(cloud)scheduleCloudBackup()}
-function restoreLastLocalSnapshot(){const x=getLocalSnapshots()[0];if(!x)return toast("Nincs helyi pillanatkép");if(!confirm(`Visszaállítsam? ${new Date(x.createdAt).toLocaleString(locale)}`))return;state=migrate({value:x.state});saveState({snapshot:false,cloud:false});initUi();Promise.all([loadWeather(),loadCurrencies()]);toast("Helyi mentés visszaállítva")}
+function saveState({cloud=true}={}){
+  localStorage.setItem(STORAGE_KEY,JSON.stringify(state));
+  if(cloud)scheduleCloudSync();
+}
 function toast(msg){const e=$("#status");e.textContent=msg;e.classList.add("show");clearTimeout(toast.t);toast.t=setTimeout(()=>e.classList.remove("show"),2600)}
 function updateClock(){const n=new Date();$("#clock").textContent=n.toLocaleTimeString(locale,{hour:"2-digit",minute:"2-digit"});$("#date").textContent=n.toLocaleDateString(locale,{year:"numeric",month:"long",day:"numeric",weekday:"long"})}
 async function loadNameday(){const el=$("#nameday");if(!el)return;const day=todayKey();try{const cached=JSON.parse(localStorage.getItem(NAMEDAY_CACHE_KEY)||"null");if(cached?.day===day&&Array.isArray(cached.names)){el.textContent=`Névnap: ${cached.names.join(", ")}`;return}}catch{}try{const r=await fetch("https://www.nevinfo.hu/api/v1/ma");if(!r.ok)throw 0;const d=await r.json(),names=(d.ma||[]).map(x=>x.name).filter(Boolean);if(!names.length)throw 0;localStorage.setItem(NAMEDAY_CACHE_KEY,JSON.stringify({day,names}));el.textContent=`Névnap: ${names.join(", ")}`}catch{el.textContent="Névnap: —"}}
@@ -88,12 +110,40 @@ function renderWidgetToggles(){if(state.activeProfile==="vio"){ $("#widgetToggle
 function sizeLabel(s){return({s:"S",m:"M",l:"L"})[s]||"M"}
 function applyWidgetSizes(){if(!NORMAL_PROFILES.includes(state.activeProfile))return;const sizes=device.widgetSizes[state.activeProfile]||{};$$('.card',$("#dashboard")).forEach(c=>{const k=c.dataset.widget,s=sizes[k]||DEFAULT_DEVICE.widgetSizes[state.activeProfile]?.[k]||"m";c.dataset.size=s;let b=c.querySelector(".widget-size-btn");if(!b){b=document.createElement("button");b.type="button";b.className="widget-size-btn";b.title="Widget mérete: S / M / L";c.appendChild(b)}b.textContent=sizeLabel(s);b.dataset.resizeWidget=k})}
 function applyWidgetLayout(){const p=currentProfile(),d=$("#dashboard");p.widgetOrder.forEach(n=>{const c=$(`[data-widget="${n}"]`);if(c)d.appendChild(c)});Object.entries(p.widgetVisibility).forEach(([n,v])=>$(`[data-widget="${n}"]`)?.classList.toggle("hidden-widget",!v));applyWidgetSizes()}
-function applyProfileTabs(){const nav=$("#profileTabs");device.profileOrder.forEach(k=>{const b=$(`.profile-tab[data-profile="${k}"]`,nav);if(b)nav.appendChild(b)});const vb=$('.profile-tab[data-profile="vio"]',nav);if(vb){vb.hidden=!device.vioVisible;nav.appendChild(vb)}$$('.profile-tab',nav).forEach(b=>b.classList.toggle("active",b.dataset.profile===state.activeProfile))}
+function renderWorkspaceReveal(){
+  const hidden=["study","work","vio"].filter(p=>!isProfileVisible(p));
+  const btn=$("#workspaceRevealBtn"),menu=$("#workspaceRevealMenu");
+  btn.hidden=!hidden.length;
+  if(!hidden.length){menu.hidden=true;menu.innerHTML="";return}
+  menu.innerHTML=hidden.map(p=>`<button type="button" data-reveal-profile="${p}">＋ ${PROFILE_LABELS[p]}</button>`).join("");
+}
+function refreshDefaultProfileSelect(){
+  const sel=$("#defaultProfileSelect");
+  if(!sel)return;
+  const visible=NORMAL_PROFILES.filter(isProfileVisible);
+  sel.innerHTML=visible.map(p=>`<option value="${p}">${PROFILE_LABELS[p]}</option>`).join("");
+  if(!visible.includes(device.defaultProfile))device.defaultProfile="general";
+  sel.value=device.defaultProfile;
+}
+function applyProfileTabs(){
+  const nav=$("#profileTabs"),reveal=$("#workspaceRevealBtn");
+  device.profileOrder.forEach(k=>{
+    const b=$(`.profile-tab[data-profile="${k}"]`,nav);
+    if(!b)return;
+    b.hidden=!isProfileVisible(k);
+    nav.insertBefore(b,reveal);
+  });
+  const vb=$('.profile-tab[data-profile="vio"]',nav);
+  if(vb){vb.hidden=!isProfileVisible("vio");nav.insertBefore(vb,reveal)}
+  $$('.profile-tab',nav).forEach(b=>b.classList.toggle("active",b.dataset.profile===state.activeProfile));
+  renderWorkspaceReveal();
+  refreshDefaultProfileSelect();
+}
 function renderProfile(){
   applyProfileTabs();const vio=state.activeProfile==="vio";$("#normalView").hidden=vio;$("#vioView").hidden=!vio;$("#currentProfileName").textContent=PROFILE_LABELS[state.activeProfile];
   if(vio){resetVioDay();renderVio();return}applyWidgetLayout();renderTodos();renderLinks();renderAgenda();renderWidgetToggles();$("#todoTitle").textContent=`${PROFILE_LABELS[state.activeProfile]} teendők`;$("#linksTitle").textContent=`${PROFILE_LABELS[state.activeProfile]} gyorsindítás`
 }
-function switchProfile(p){if(!PROFILE_LABELS[p]||p===state.activeProfile)return;if(p==="vio"&&!device.vioVisible)return;if(p!=="vio")stopVioPlayback();state.activeProfile=p;saveState({cloud:false,snapshot:false});renderProfile()}
+function switchProfile(p){if(!PROFILE_LABELS[p]||p===state.activeProfile||!isProfileVisible(p))return;if(p!=="vio")stopVioPlayback();state.activeProfile=p;saveState({cloud:false});renderProfile()}
 
 /* search */
 function runSearch(raw){let q=raw.trim();if(!q)return;let engine=state.searchEngine;const parts=q.split(/\s+/),prefix=parts[0].toLowerCase();if(SEARCH_PREFIXES[prefix]&&parts.length>1){engine=SEARCH_PREFIXES[prefix];q=parts.slice(1).join(" ")}const url=(SEARCH_ENGINES[engine]||SEARCH_ENGINES.google)(q);window.open(url,"_blank","noopener,noreferrer")}
@@ -200,42 +250,187 @@ function createPlayer(videoId){
     }
   })
 }
-function startVioUsage(){if(vioRemainingMs()<=0){stopVioPlayback();renderVio();return}if(vioPlaying)return;vioPlaying=true;vioPlayTickAt=Date.now();clearInterval(vioUsageInterval);vioUsageInterval=setInterval(()=>{if(!vioPlaying)return;const now=Date.now(),delta=now-vioPlayTickAt;vioPlayTickAt=now;state.vio.usedMs+=Math.max(0,Math.min(delta,2000));saveState({snapshot:false});renderVioTime();if(vioRemainingMs()<=0){stopVioPlayback();renderVio();toast("Mára elfogyott a videóidő")}},1000)}
+function startVioUsage(){if(vioRemainingMs()<=0){stopVioPlayback();renderVio();return}if(vioPlaying)return;vioPlaying=true;vioPlayTickAt=Date.now();clearInterval(vioUsageInterval);vioUsageInterval=setInterval(()=>{if(!vioPlaying)return;const now=Date.now(),delta=now-vioPlayTickAt;vioPlayTickAt=now;state.vio.usedMs+=Math.max(0,Math.min(delta,2000));saveState({});renderVioTime();if(vioRemainingMs()<=0){stopVioPlayback();renderVio();toast("Mára elfogyott a videóidő")}},1000)}
 function renderVioTime(){const rem=vioRemainingMs(),lim=vioLimitMs(),frac=lim?rem/lim:0;$("#vioRemainingText").textContent=mmss(rem);$("#vioProgressBar").style.width=`${Math.max(0,Math.min(100,frac*100))}%`;$("#vioTimeSummary").textContent=rem>0?`Ma még ${mmss(rem)} videóidő maradt.`:"Mára elfogyott a videóidő."}
-function stopVioTicker(){if(vioPlaying){const now=Date.now();state.vio.usedMs+=Math.max(0,Math.min(now-vioPlayTickAt,2000));saveState({snapshot:false})}vioPlaying=false;clearInterval(vioUsageInterval);vioUsageInterval=null}
+function stopVioTicker(){if(vioPlaying){const now=Date.now();state.vio.usedMs+=Math.max(0,Math.min(now-vioPlayTickAt,2000));saveState({})}vioPlaying=false;clearInterval(vioUsageInterval);vioUsageInterval=null}
 function stopVioPlayback(){stopVioTicker();if(ytPlayer){try{ytPlayer.stopVideo()}catch{}}}
 function closeVioPlayer(){stopVioPlayback();$("#vioPlayerShell").hidden=true;vioCurrentVideoId=null;markActiveVioVideo()}
 function puppy(){const m=["A kiskutya már szundikál. 💤","Holnap újra jöhet egy videó! 🌙","Most jöhet egy mese, rajzolás vagy játék. 💛"];$("#vioEndMessage").textContent=m[Math.floor(Math.random()*m.length)]}
 
-/* Cloud backup using Supabase Auth + REST */
+/* Cloud sync using Supabase Auth + REST – one row per user */
 const cloudSession=()=>{try{return JSON.parse(localStorage.getItem(CLOUD_SESSION_KEY)||"null")}catch{return null}};
+const getLocalCloudRevision=()=>{const n=Number(localStorage.getItem(CLOUD_REV_KEY)||"0");return Number.isFinite(n)&&n>=0?n:0};
+const setLocalCloudRevision=n=>localStorage.setItem(CLOUD_REV_KEY,String(Math.max(0,Number(n)||0)));
 const setCloudSession=s=>s?localStorage.setItem(CLOUD_SESSION_KEY,JSON.stringify(s)):localStorage.removeItem(CLOUD_SESSION_KEY);
 const cloudValid=()=>/^https:\/\/.+\.supabase\.co\/?$/i.test((state.cloud.url||"").trim())&&(state.cloud.key||"").trim().length>20;
-function cloudHeaders(auth=true){const s=cloudSession(),h={apikey:state.cloud.key,"Content-Type":"application/json"};if(auth&&s?.access_token)h.Authorization=`Bearer ${s.access_token}`;return h}
+function cloudHeaders(auth=true,extra={}){const s=cloudSession(),h={apikey:state.cloud.key,"Content-Type":"application/json",...extra};if(auth&&s?.access_token)h.Authorization=`Bearer ${s.access_token}`;return h}
 async function authReq(path,body){const r=await fetch(`${state.cloud.url.replace(/\/$/,"")}/auth/v1/${path}`,{method:"POST",headers:cloudHeaders(false),body:JSON.stringify(body)}),d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.msg||d.message||d.error_description||"Supabase hiba");return d}
 function saveCloudInputs(){state.cloud.url=$("#cloudUrlInput").value.trim().replace(/\/$/,"");state.cloud.key=$("#cloudKeyInput").value.trim();state.cloud.email=$("#cloudEmailInput").value.trim();saveState({cloud:false})}
 async function cloudSignUp(){saveCloudInputs();if(!cloudValid())return toast("Project URL vagy kulcs hiányzik");const email=$("#cloudEmailInput").value.trim(),password=$("#cloudPasswordInput").value;if(!email||password.length<6)return toast("Adj meg e-mailt és legalább 6 karakteres jelszót");try{const d=await authReq("signup",{email,password});if(d.access_token){setCloudSession(d);state.cloud.enabled=true;saveState({cloud:false})}$("#cloudStatus").textContent=d.access_token?"Regisztráció és belépés sikerült.":"Regisztráció sikerült. Ha kell, erősítsd meg az e-mailt, majd lépj be.";$("#cloudPasswordInput").value="";await refreshCloud()}catch(e){$("#cloudStatus").textContent=e.message}}
-async function cloudSignIn(){saveCloudInputs();if(!cloudValid())return toast("Project URL vagy kulcs hiányzik");try{const d=await authReq("token?grant_type=password",{email:$("#cloudEmailInput").value.trim(),password:$("#cloudPasswordInput").value});setCloudSession(d);state.cloud.enabled=true;saveState({cloud:false});$("#cloudPasswordInput").value="";$("#cloudStatus").textContent=`Bejelentkezve: ${d.user?.email||state.cloud.email}`;await refreshCloud();toast("Felhőmentés bekapcsolva")}catch(e){$("#cloudStatus").textContent=e.message}}
+async function cloudSignIn(){saveCloudInputs();if(!cloudValid())return toast("Project URL vagy kulcs hiányzik");try{const d=await authReq("token?grant_type=password",{email:$("#cloudEmailInput").value.trim(),password:$("#cloudPasswordInput").value});setCloudSession(d);state.cloud.enabled=true;saveState({cloud:false});$("#cloudPasswordInput").value="";$("#cloudStatus").textContent=`Bejelentkezve: ${d.user?.email||state.cloud.email}`;await refreshCloud();toast("Felhőszinkron bekapcsolva")}catch(e){$("#cloudStatus").textContent=e.message}}
 function parseJwt(t){try{return JSON.parse(atob(t.split(".")[1].replace(/-/g,"+").replace(/_/g,"/")))}catch{return null}}
 async function ensureSession(){let s=cloudSession();if(!s?.access_token)return null;const exp=(s.expires_at||0)*1000;if(exp&&exp-Date.now()>60000)return s;if(!s.refresh_token)return null;try{s=await authReq("token?grant_type=refresh_token",{refresh_token:s.refresh_token});setCloudSession(s);return s}catch{setCloudSession(null);return null}}
-async function listCloud(limit=10){const s=await ensureSession();if(!s)return[];const r=await fetch(`${state.cloud.url}/rest/v1/startpage_backups?select=id,created_at,state&order=created_at.desc&limit=${limit}`,{headers:cloudHeaders(true)});if(!r.ok)throw new Error(await r.text());return r.json()}
-async function cloudInsert(){if(!state.cloud.enabled||!cloudValid())return;const s=await ensureSession();if(!s)return;const uid=s.user?.id||parseJwt(s.access_token)?.sub;if(!uid)return;const r=await fetch(`${state.cloud.url}/rest/v1/startpage_backups`,{method:"POST",headers:{...cloudHeaders(true),Prefer:"return=minimal"},body:JSON.stringify({user_id:uid,device_id:navigator.userAgent.slice(0,120),state:clone(state)})});if(!r.ok)throw new Error(await r.text());lastCloudBackupAt=Date.now();const all=await listCloud(12);for(const old of all.slice(5))await fetch(`${state.cloud.url}/rest/v1/startpage_backups?id=eq.${encodeURIComponent(old.id)}`,{method:"DELETE",headers:cloudHeaders(true)})}
-function scheduleCloudBackup(){if(!state.cloud.enabled||!cloudSession()||cloudBackupTimer)return;const delay=Math.max(2500,30000-(Date.now()-lastCloudBackupAt));cloudBackupTimer=setTimeout(()=>{cloudBackupTimer=null;cloudInsert().catch(()=>{})},delay)}
-async function cloudBackupNow(){saveCloudInputs();if(!cloudSession())return toast("Előbb lépj be");try{await cloudInsert();await refreshCloud();toast("Felhőmentés elkészült")}catch(e){$("#cloudStatus").textContent=e.message}}
-async function restoreCloud(item){if(!item?.state)return;if(!confirm(`Visszaállítsam? ${new Date(item.created_at).toLocaleString(locale)}`))return;state=migrate({value:item.state});saveState({cloud:false,snapshot:false});initUi();await Promise.all([loadWeather(),loadCurrencies()]);toast("Felhőmentés visszaállítva")}
-async function restoreLatestCloud(){try{const a=await listCloud(1);if(!a.length)return toast("Nincs felhőmentés");await restoreCloud(a[0])}catch(e){$("#cloudStatus").textContent=e.message}}
-async function refreshCloud(){$("#cloudUrlInput").value=state.cloud.url||"";$("#cloudKeyInput").value=state.cloud.key||"";$("#cloudEmailInput").value=state.cloud.email||"";const s=await ensureSession();$("#cloudStatus").textContent=s?`Bejelentkezve: ${s.user?.email||state.cloud.email||"felhasználó"} · automatikus mentés ${state.cloud.enabled?"BE":"KI"}`:"Nincs bejelentkezve.";$("#cloudSnapshots").innerHTML="";if(!s)return;try{const a=await listCloud(5);$("#cloudSnapshots").dataset.snapshots=JSON.stringify(a);$("#cloudSnapshots").innerHTML=a.map(x=>`<div class="snapshot-row"><span>${new Date(x.created_at).toLocaleString(locale)}</span><button type="button" data-cloud-restore="${x.id}">Visszaállítás</button></div>`).join("")||'<div class="hint">Még nincs felhőmentés.</div>'}catch(e){$("#cloudStatus").textContent=e.message}}
-function cloudSignOut(){setCloudSession(null);state.cloud.enabled=false;saveState({cloud:false});$("#cloudStatus").textContent="Nincs bejelentkezve.";$("#cloudSnapshots").innerHTML="";toast("Kijelentkezve")}
+function syncableState(){
+  const out=clone(state);
+  out.cloud={url:"",key:"",email:"",enabled:false};
+  out.activeProfile="general";
+  return out
+}
+async function cloudGet(){
+  const s=await ensureSession();if(!s)return null;
+  const uid=s.user?.id||parseJwt(s.access_token)?.sub;if(!uid)return null;
+  const url=`${state.cloud.url}/rest/v1/startpage_backups?user_id=eq.${encodeURIComponent(uid)}&select=id,user_id,created_at,state,revision&limit=1`;
+  const r=await fetch(url,{headers:cloudHeaders(true)});
+  if(!r.ok)throw new Error(await r.text());
+  const a=await r.json();
+  return a[0]||null
+}
+async function cloudUpsert(){
+  if(!state.cloud.enabled||!cloudValid())return;
+  const s=await ensureSession();if(!s)return;
+  const uid=s.user?.id||parseJwt(s.access_token)?.sub;if(!uid)return;
+
+  const localRevision=getLocalCloudRevision();
+  const remote=await cloudGet();
+  const remoteRevision=Number(remote?.revision||0);
+
+  if(remote&&localRevision===0){
+    throw new Error(`A felhőben már van mentés (rev ${remoteRevision}). Előbb frissíts a ☁↻ gombbal.`)
+  }
+  if(remote&&remoteRevision!==localRevision){
+    throw new Error(`A felhő frissebb (rev ${remoteRevision}), ezen a gépen rev ${localRevision} van. Előbb húzd le a legújabb állapotot.`)
+  }
+
+  const nextRevision=remoteRevision+1;
+  const now=new Date().toISOString();
+
+  if(remote){
+    const url=`${state.cloud.url}/rest/v1/startpage_backups?user_id=eq.${encodeURIComponent(uid)}&revision=eq.${remoteRevision}`;
+    const r=await fetch(url,{
+      method:"PATCH",
+      headers:cloudHeaders(true,{Prefer:"return=representation"}),
+      body:JSON.stringify({created_at:now,device_id:navigator.userAgent.slice(0,120),state:syncableState(),revision:nextRevision})
+    });
+    if(!r.ok)throw new Error(await r.text());
+    const rows=await r.json().catch(()=>[]);
+    if(!Array.isArray(rows)||rows.length!==1){
+      throw new Error("Közben másik eszköz frissítette a felhőt. Húzd le a legújabb állapotot.")
+    }
+  }else{
+    const url=`${state.cloud.url}/rest/v1/startpage_backups`;
+    const r=await fetch(url,{
+      method:"POST",
+      headers:cloudHeaders(true,{Prefer:"return=representation"}),
+      body:JSON.stringify({user_id:uid,created_at:now,device_id:navigator.userAgent.slice(0,120),state:syncableState(),revision:nextRevision})
+    });
+    if(!r.ok)throw new Error(await r.text());
+  }
+
+  setLocalCloudRevision(nextRevision);
+  lastCloudSyncAt=Date.now();
+  updateCloudStatus(now,nextRevision)
+}
+function scheduleCloudSync(){
+  if(!state.cloud.enabled||!cloudSession())return;
+  clearTimeout(cloudSyncTimer);
+  cloudSyncTimer=setTimeout(()=>{
+    cloudSyncTimer=null;
+    cloudUpsert().catch(e=>{const el=$("#cloudStatus");if(el)el.textContent=`Szinkronhiba: ${e.message}`})
+  },1200)
+}
+function updateCloudStatus(remoteTime=null,revision=null){
+  const el=$("#cloudStatus");if(!el)return;
+  const s=cloudSession();
+  if(!s){el.textContent="Nincs bejelentkezve.";return}
+  const who=s.user?.email||state.cloud.email||"felhasználó";
+  const time=remoteTime?new Date(remoteTime).toLocaleString(locale):(lastCloudSyncAt?new Date(lastCloudSyncAt).toLocaleString(locale):"még nincs");
+  const rev=revision??getLocalCloudRevision();
+  el.textContent=`Bejelentkezve: ${who} · auto sync ${state.cloud.enabled?"BE":"KI"} · rev ${rev} · felhő: ${time}`
+}
+async function cloudPushNow(){
+  saveCloudInputs();
+  if(!cloudSession())return toast("Előbb lépj be");
+  try{await cloudUpsert();await refreshCloud();toast("Felhő frissítve")}catch(e){$("#cloudStatus").textContent=e.message}
+}
+async function cloudPullNow(){
+  saveCloudInputs();
+  if(!cloudSession())return toast("Előbb lépj be");
+  try{
+    const item=await cloudGet();
+    if(!item?.state)return toast("Még nincs felhőállapot");
+    const localCloud=clone(state.cloud);
+    state=migrate({value:item.state});
+    state.cloud=localCloud;
+    state.activeProfile=device.defaultProfile;
+    setLocalCloudRevision(Number(item.revision||0));
+    saveState({cloud:false});
+    initUi();
+    await Promise.all([loadWeather(),loadCurrencies()]);
+    updateCloudStatus(item.created_at,Number(item.revision||0));
+    renderCloudQuickState(Number(item.revision||0),Number(item.revision||0));
+    toast(`Felhőből frissítve · rev ${Number(item.revision||0)}`)
+  }catch(e){$("#cloudStatus").textContent=e.message;toast("Nem sikerült frissíteni a felhőből")}
+}
+async function refreshCloud(){
+  $("#cloudUrlInput").value=state.cloud.url||"";
+  $("#cloudKeyInput").value=state.cloud.key||"";
+  $("#cloudEmailInput").value=state.cloud.email||"";
+  const s=await ensureSession();
+  if(!s){updateCloudStatus();$("#cloudSnapshots").innerHTML="";renderCloudQuickState();return}
+  try{
+    const item=await cloudGet();
+    const remoteRevision=Number(item?.revision||0);
+    const localRevision=getLocalCloudRevision();
+    updateCloudStatus(item?.created_at||null,localRevision);
+    $("#cloudSnapshots").innerHTML=item?`<div class="snapshot-row"><span>1 felhőállapot · rev ${remoteRevision} · ${new Date(item.created_at).toLocaleString(locale)}</span></div>`:'<div class="hint">Még nincs felhőállapot. Az első módosítás feltölti.</div>';
+    renderCloudQuickState(remoteRevision,localRevision)
+  }catch(e){$("#cloudStatus").textContent=e.message;renderCloudQuickState()}
+}
+function cloudSignOut(){setCloudSession(null);setLocalCloudRevision(0);state.cloud.enabled=false;saveState({cloud:false});$("#cloudStatus").textContent="Nincs bejelentkezve.";$("#cloudSnapshots").innerHTML="";toast("Kijelentkezve")}
+
+function renderCloudQuickState(remoteRevision=null,localRevision=null){
+  const btn=$("#cloudQuickRefreshBtn");if(!btn)return;
+  if(!cloudSession()){btn.textContent="☁!";btn.title="Felhő: nincs bejelentkezve";btn.dataset.state="offline";return}
+  const local=localRevision??getLocalCloudRevision();
+  if(remoteRevision==null){btn.textContent="☁↻";btn.title="Felhőből frissítés";btn.dataset.state="ready";return}
+  if(remoteRevision>local){
+    btn.textContent="☁!";
+    btn.title=`Frissebb felhőmentés érhető el (rev ${remoteRevision})`;
+    btn.dataset.state="stale";
+  }else{
+    btn.textContent="☁✓";
+    btn.title=`Felhő rendben · rev ${local}`;
+    btn.dataset.state="ok";
+  }
+}
+async function quickCloudRefresh(){
+  if(!cloudSession()){toast("Nincs Supabase bejelentkezés ezen a böngészőn");openSettings();return}
+  const btn=$("#cloudQuickRefreshBtn");
+  if(btn){btn.textContent="☁↻";btn.classList.add("spinning")}
+  await cloudPullNow();
+  if(btn)btn.classList.remove("spinning");
+  await refreshCloud()
+}
 
 /* settings + backup */
-function populateSettings(){$("#cityInput").value=state.city.name;$("#currenciesInput").value=state.currencies.join(", ");$("#currentProfileName").textContent=PROFILE_LABELS[state.activeProfile];$("#defaultProfileSelect").value=device.defaultProfile;$("#vioVisibleToggle").checked=device.vioVisible;renderWidgetToggles();refreshCloud()}
+function populateSettings(){
+  $("#cityInput").value=state.city.name;
+  $("#currenciesInput").value=state.currencies.join(", ");
+  $("#currentProfileName").textContent=PROFILE_LABELS[state.activeProfile];
+  $("#focusVisibleToggle").checked=isProfileVisible("study");
+  $("#workVisibleToggle").checked=isProfileVisible("work");
+  $("#vioVisibleToggle").checked=isProfileVisible("vio");
+  refreshDefaultProfileSelect();
+  renderWidgetToggles();
+  refreshCloud()
+}
 function openSettings(){populateSettings();$("#settingsPanel").classList.add("open");$("#settingsPanel").setAttribute("aria-hidden","false");$("#overlay").classList.add("show")}
 function closeSettings(){$("#settingsPanel").classList.remove("open");$("#settingsPanel").setAttribute("aria-hidden","true");$("#overlay").classList.remove("show")}
 async function saveCity(){const q=$("#cityInput").value.trim();if(!q)return;toast("Város keresése…");try{const r=await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=5&language=hu&format=json`);if(!r.ok)throw 0;const x=(await r.json()).results?.[0];if(!x)return toast("Nem találtam ilyen várost");state.city={name:x.name,latitude:x.latitude,longitude:x.longitude,timezone:x.timezone||"auto"};saveState();await loadWeather();toast(`Mentve: ${state.city.name}`)}catch{toast("A városkeresés sikertelen")}}
 function saveCurrencies(){const a=$("#currenciesInput").value.split(",").map(v=>v.trim().toUpperCase()).filter(v=>/^[A-Z]{3}$/.test(v)).slice(0,3);if(!a.length)return toast("Adj meg legalább egy devizakódot");state.currencies=[...new Set(a)];state.currencies.forEach(c=>{if(state.currencyAmounts[c]==null)state.currencyAmounts[c]=1000});saveState();applyCurrencyWidgetSizing();loadCurrencies();toast("Devizák mentve")}
-function exportSettings(){saveLocalSnapshot();const b=new Blob([JSON.stringify(state,null,2)],{type:"application/json"}),u=URL.createObjectURL(b),a=document.createElement("a");a.href=u;a.download=`lapiit-startpage-v6-${new Date().toISOString().slice(0,10)}.json`;a.click();URL.revokeObjectURL(u)}
-async function importSettings(file){try{saveLocalSnapshot();state=migrate({value:JSON.parse(await file.text())});saveState({cloud:false,snapshot:false});initUi();await Promise.all([loadWeather(),loadCurrencies()]);toast("Beállítások importálva")}catch{toast("A fájl nem importálható")}}
-function resetAll(){if(!confirm("Minden helyi beállítás, teendő, link és Vio-adat törlődik. Folytatod?"))return;saveLocalSnapshot();state=clone(DEFAULT_STATE);device=clone(DEFAULT_DEVICE);localStorage.removeItem(CUSTOM_BG_KEY);state.vio.day=todayKey();saveDevice();saveState({cloud:false,snapshot:false});initUi();loadWeather();loadCurrencies();closeSettings();toast("Alaphelyzet visszaállítva")}
+function exportSettings(){const b=new Blob([JSON.stringify(state,null,2)],{type:"application/json"}),u=URL.createObjectURL(b),a=document.createElement("a");a.href=u;a.download=`lapiit-startpage-v6-${new Date().toISOString().slice(0,10)}.json`;a.click();URL.revokeObjectURL(u)}
+async function importSettings(file){try{state=migrate({value:JSON.parse(await file.text())});saveState({cloud:false});initUi();await Promise.all([loadWeather(),loadCurrencies()]);toast("Beállítások importálva")}catch{toast("A fájl nem importálható")}}
+function resetAll(){if(!confirm("Minden helyi beállítás, teendő, link és Vio-adat törlődik. Folytatod?"))return;state=clone(DEFAULT_STATE);device=clone(DEFAULT_DEVICE);localStorage.removeItem(CUSTOM_BG_KEY);state.vio.day=todayKey();saveDevice();saveState({cloud:false});initUi();loadWeather();loadCurrencies();closeSettings();toast("Alaphelyzet visszaállítva")}
 function initCardDrag(){let dragged=null;$$(".card").forEach(c=>{c.addEventListener("dragstart",e=>{if(e.target.closest(".link-drag,.todo-drag,input,button,select")){e.preventDefault();return}dragged=c;c.classList.add("dragging");e.dataTransfer.effectAllowed="move"});c.addEventListener("dragend",()=>{dragged?.classList.remove("dragging");dragged=null;if(NORMAL_PROFILES.includes(state.activeProfile)){currentProfile().widgetOrder=$$(".card",$("#dashboard")).map(x=>x.dataset.widget);saveState()}});c.addEventListener("dragover",e=>{e.preventDefault();if(!dragged||dragged===c)return;const r=c.getBoundingClientRect();$("#dashboard").insertBefore(dragged,e.clientY>r.top+r.height/2?c.nextSibling:c)})})}
 async function cleanupLegacyPwa(){
   try{
@@ -255,6 +450,9 @@ function initUi(){applyAppearance();renderProfile();renderCurrencyCards();setTim
 
 /* events */
 $("#profileTabs").addEventListener("click",e=>{const b=e.target.closest(".profile-tab");if(b)switchProfile(b.dataset.profile)});
+$("#workspaceRevealBtn").addEventListener("click",e=>{e.stopPropagation();const m=$("#workspaceRevealMenu");m.hidden=!m.hidden});
+$("#workspaceRevealMenu").addEventListener("click",e=>{const b=e.target.closest("[data-reveal-profile]");if(!b)return;const p=b.dataset.revealProfile;setProfileVisibility(p,true);$("#workspaceRevealMenu").hidden=true;switchProfile(p)});
+document.addEventListener("click",e=>{if(!e.target.closest("#workspaceRevealBtn")&&!e.target.closest("#workspaceRevealMenu"))$("#workspaceRevealMenu").hidden=true});
 let profileDrag=null;$("#profileTabs").addEventListener("dragstart",e=>{const b=e.target.closest('.profile-tab[data-profile]:not([data-profile="vio"])');if(!b)return;profileDrag=b.dataset.profile;b.classList.add("dragging")});$("#profileTabs").addEventListener("dragend",e=>{e.target.closest(".profile-tab")?.classList.remove("dragging");profileDrag=null});$("#profileTabs").addEventListener("dragover",e=>{const over=e.target.closest('.profile-tab[data-profile]:not([data-profile="vio"])');if(!profileDrag||!over||over.dataset.profile===profileDrag)return;e.preventDefault();const order=[...device.profileOrder],from=order.indexOf(profileDrag),to=order.indexOf(over.dataset.profile);order.splice(from,1);order.splice(to,0,profileDrag);device.profileOrder=order;saveDevice();applyProfileTabs()});
 $("#searchForm").addEventListener("submit",e=>{e.preventDefault();runSearch($("#searchInput").value)});
 $("#searchEngine").addEventListener("change",e=>{state.searchEngine=e.target.value;saveState()});
@@ -276,7 +474,7 @@ $("#linkForm").addEventListener("submit",e=>{e.preventDefault();const id=$("#lin
 $("#deleteLinkBtn").addEventListener("click",()=>{const id=$("#linkId").value;currentProfile().links=currentProfile().links.filter(x=>x.id!==id);saveState();renderLinks();$("#linkDialog").close()});
 
 $("#rangeSelector").addEventListener("click",e=>{const b=e.target.closest("button[data-range]");if(!b)return;state.currencyRange=+b.dataset.range;saveState();loadCurrencies()});
-$("#currencyGrid").addEventListener("input",e=>{const i=e.target.closest(".currency-amount");if(!i)return;state.currencyAmounts[i.dataset.code]=+i.value||0;saveState({snapshot:false});updateCurrencyCalculation(i.dataset.code)});
+$("#currencyGrid").addEventListener("input",e=>{const i=e.target.closest(".currency-amount");if(!i)return;state.currencyAmounts[i.dataset.code]=+i.value||0;saveState({});updateCurrencyCalculation(i.dataset.code)});
 $("#currencyGrid").addEventListener("click",e=>{const code=e.target.dataset.removeCurrency;if(!code)return;if(state.currencies.length<=1)return toast("Legalább egy deviza maradjon");state.currencies=state.currencies.filter(x=>x!==code);saveState();loadCurrencies()});
 $("#currencyGrid").addEventListener("dragstart",e=>{const c=e.target.closest('.currency');if(!c)return;currencyDragCode=c.dataset.code;c.classList.add('currency-dragging')});$("#currencyGrid").addEventListener("dragend",e=>{e.target.closest('.currency')?.classList.remove('currency-dragging');currencyDragCode=null});$("#currencyGrid").addEventListener("dragover",e=>{const over=e.target.closest('.currency');if(!currencyDragCode||!over||over.dataset.code===currencyDragCode)return;e.preventDefault();const order=[...state.currencies],from=order.indexOf(currencyDragCode),to=order.indexOf(over.dataset.code);order.splice(from,1);order.splice(to,0,currencyDragCode);state.currencies=order;saveState();renderCurrencyCards();state.currencies.forEach(c=>latestChartData[c]&&drawChart($(`#${c}Chart`),latestChartData[c],$(`#${c}Change`)?.classList.contains("down")))});
 
@@ -285,7 +483,8 @@ $("#startTimer").addEventListener("click",()=>{cancelAnimationFrame(timerFrame);
 $("#resetTimer").addEventListener("click",()=>{cancelAnimationFrame(timerFrame);if(timerMode==="stopwatch"){stopwatchRunning=false;stopwatchElapsed=0;lapNumber=0;$("#lapInfo").textContent=""}else{pomodoroRunning=false;pomodoroPhase="work";pomodoroRemaining=state.pomodoro.workMinutes*60000;$("#focusLabel").textContent="Fókuszidő";$("#lapInfo").textContent=`${state.pomodoro.workMinutes} perc fókusz / ${state.pomodoro.breakMinutes} perc szünet`}$("#startTimer").textContent="Start";tickFocus()});
 $("#lapTimer").addEventListener("click",()=>{if(timerMode==="stopwatch"){const c=stopwatchElapsed+(stopwatchRunning?performance.now()-stopwatchStart:0);if(c<=0)return;lapNumber++;$("#lapInfo").textContent=`${lapNumber}. kör: ${$("#timerDisplay").textContent}`}else{pomodoroRunning=false;pomodoroPhase=pomodoroPhase==="work"?"break":"work";pomodoroRemaining=(pomodoroPhase==="work"?state.pomodoro.workMinutes:state.pomodoro.breakMinutes)*60000;$("#focusLabel").textContent=pomodoroPhase==="work"?"Fókuszidő":"Szünet";$("#startTimer").textContent="Start";tickFocus()}});
 
-$("#settingsBtn").addEventListener("click",openSettings);$("#closeSettingsBtn").addEventListener("click",closeSettings);$("#overlay").addEventListener("click",closeSettings);
+$("#settingsBtn").addEventListener("click",openSettings);
+$("#cloudQuickRefreshBtn").addEventListener("click",quickCloudRefresh);$("#closeSettingsBtn").addEventListener("click",closeSettings);$("#overlay").addEventListener("click",closeSettings);
 $("#themeSelect").addEventListener("change",e=>{state.theme=e.target.value;saveState();applyAppearance();loadCurrencies()});
 $("#densitySelect").addEventListener("change",e=>{state.density=e.target.value;saveState();applyAppearance();loadCurrencies()});
 $("#backgroundSelect").addEventListener("change",e=>setBackground(e.target.value));
@@ -293,15 +492,28 @@ $("#backgroundDimRange").addEventListener("input",e=>{device.backgroundDim=+e.ta
 $("#backgroundBlurRange").addEventListener("input",e=>{device.backgroundBlur=+e.target.value;saveDevice();applyAppearance()});
 $("#customBackgroundFile").addEventListener("change",e=>{const f=e.target.files?.[0];if(!f)return;if(f.size>2.5*1024*1024){toast("A háttérkép legyen 2,5 MB alatt");e.target.value="";return}const r=new FileReader();r.onload=()=>{try{localStorage.setItem(CUSTOM_BG_KEY,r.result);device.background="custom";saveDevice();applyAppearance();toast("Saját háttér beállítva")}catch{toast("A kép túl nagy a böngésző helyi tárhelyéhez")}};r.readAsDataURL(f);e.target.value=""});
 $("#clearCustomBackgroundBtn").addEventListener("click",()=>{localStorage.removeItem(CUSTOM_BG_KEY);if(device.background==="custom")device.background="aurora";saveDevice();applyAppearance();toast("Saját háttér törölve")});
-$("#glassRange").addEventListener("input",e=>{state.glass=+e.target.value;saveState({snapshot:false});applyAppearance()});
+$("#glassRange").addEventListener("input",e=>{state.glass=+e.target.value;saveState({});applyAppearance()});
 $("#quoteInput").addEventListener("change",e=>{state.quote=e.target.value.trim()||DEFAULT_STATE.quote;saveState();applyAppearance()});
 $("#widgetToggles").addEventListener("change",e=>{const k=e.target.dataset.widgetToggle;if(!k||!NORMAL_PROFILES.includes(state.activeProfile))return;currentProfile().widgetVisibility[k]=e.target.checked;saveState();applyWidgetLayout()});
+function setProfileVisibility(profile,visible){
+  if(profile==="general")return;
+  device.profileVisibility[profile]=!!visible;
+  if(!visible&&state.activeProfile===profile){
+    state.activeProfile="general";
+    renderProfile();
+  }
+  if(!isProfileVisible(device.defaultProfile))device.defaultProfile="general";
+  saveDevice();
+  applyProfileTabs();
+}
 $("#defaultProfileSelect").addEventListener("change",e=>{device.defaultProfile=e.target.value;saveDevice();toast(`Ezen a gépen a ${PROFILE_LABELS[device.defaultProfile]} lesz az induló munkatér`)});
-$("#vioVisibleToggle").addEventListener("change",e=>{device.vioVisible=e.target.checked;if(!device.vioVisible&&state.activeProfile==="vio")switchProfile(device.defaultProfile);saveDevice();applyProfileTabs()});
+$("#focusVisibleToggle").addEventListener("change",e=>setProfileVisibility("study",e.target.checked));
+$("#workVisibleToggle").addEventListener("change",e=>setProfileVisibility("work",e.target.checked));
+$("#vioVisibleToggle").addEventListener("change",e=>setProfileVisibility("vio",e.target.checked));
 $("#resetWorkspaceOrderBtn").addEventListener("click",()=>{device.profileOrder=clone(DEFAULT_DEVICE.profileOrder);saveDevice();applyProfileTabs();toast("Munkatérsorrend visszaállítva")});
 $("#saveCityBtn").addEventListener("click",saveCity);$("#saveCurrenciesBtn").addEventListener("click",saveCurrencies);
 
-$("#exportBtn").addEventListener("click",exportSettings);$("#importBtn").addEventListener("click",()=>$("#importFile").click());$("#importFile").addEventListener("change",e=>{const f=e.target.files?.[0];if(f)importSettings(f);e.target.value=""});$("#restoreLocalBtn").addEventListener("click",restoreLastLocalSnapshot);$("#resetAllBtn").addEventListener("click",resetAll);
+$("#exportBtn").addEventListener("click",exportSettings);$("#importBtn").addEventListener("click",()=>$("#importFile").click());$("#importFile").addEventListener("change",e=>{const f=e.target.files?.[0];if(f)importSettings(f);e.target.value=""});$("#resetAllBtn").addEventListener("click",resetAll);
 $("#refreshBtn").addEventListener("click",async()=>{toast("Adatok frissítése…");await Promise.all([loadWeather(),loadCurrencies()]);toast("Frissítve")});$("#bgNextBtn").addEventListener("click",nextBackground);$("#fullscreenBtn").addEventListener("click",()=>document.fullscreenElement?document.exitFullscreen?.():document.documentElement.requestFullscreen?.());
 
 $("#vioParentBtn").addEventListener("click",()=>parentAccess(openVioParent));
@@ -319,11 +531,10 @@ $("#vioVideoGrid").addEventListener("click",e=>{const t=e.target.closest("[data-
 $("#vioClosePlayerBtn").addEventListener("click",closeVioPlayer);$("#sleepyDog").addEventListener("click",puppy);
 document.addEventListener("visibilitychange",()=>{if(document.hidden){try{ytPlayer?.pauseVideo()}catch{}stopVioTicker()}});
 
-$("#cloudSignUpBtn").addEventListener("click",cloudSignUp);$("#cloudSignInBtn").addEventListener("click",cloudSignIn);$("#cloudBackupBtn").addEventListener("click",cloudBackupNow);$("#cloudRestoreBtn").addEventListener("click",restoreLatestCloud);$("#cloudSignOutBtn").addEventListener("click",cloudSignOut);
-$("#cloudSnapshots").addEventListener("click",e=>{const id=e.target.dataset.cloudRestore;if(!id)return;try{const a=JSON.parse($("#cloudSnapshots").dataset.snapshots||"[]"),x=a.find(v=>v.id===id);if(x)restoreCloud(x)}catch{}});
+$("#cloudSignUpBtn").addEventListener("click",cloudSignUp);$("#cloudSignInBtn").addEventListener("click",cloudSignIn);$("#cloudBackupBtn").addEventListener("click",cloudPushNow);$("#cloudRestoreBtn").addEventListener("click",cloudPullNow);$("#cloudSignOutBtn").addEventListener("click",cloudSignOut);
 
 window.addEventListener("resize",()=>{clearTimeout(window.__chartResizeTimer);window.__chartResizeTimer=setTimeout(()=>state.currencies.forEach(c=>latestChartData[c]&&drawChart($(`#${c}Chart`),latestChartData[c],$(`#${c}Change`)?.classList.contains("down"))),180)});
-window.addEventListener("beforeunload",()=>{stopVioTicker();saveState({cloud:false,snapshot:false})});
+window.addEventListener("beforeunload",()=>{stopVioTicker();saveState({cloud:false})});
 
 /* boot */
-resetVioDay();saveState({cloud:false,snapshot:false});saveDevice();initUi();initCardDrag();updateClock();loadNameday();setInterval(updateClock,1000);setInterval(loadNameday,21600000);loadWeather();loadCurrencies();setInterval(loadWeather,1200000);setInterval(loadCurrencies,3600000);cleanupLegacyPwa();
+resetVioDay();saveState({cloud:false});saveDevice();initUi();initCardDrag();updateClock();loadNameday();setInterval(updateClock,1000);setInterval(loadNameday,21600000);loadWeather();loadCurrencies();renderCloudQuickState();if(cloudSession())refreshCloud();setInterval(loadWeather,1200000);setInterval(loadCurrencies,3600000);cleanupLegacyPwa();

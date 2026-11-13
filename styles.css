@@ -1308,3 +1308,55 @@ body[data-background="sunrise"] {
   --chrome-border: rgba(245,205,163,.20);
 }
 
+
+
+/* ==========================================================
+   V6.3 – OPTIONAL WORKSPACES
+   ========================================================== */
+.profile-reveal-btn {
+  min-width: 38px;
+  padding: 8px 11px;
+  border: 0;
+  border-left: 1px solid var(--chrome-border);
+  background: transparent;
+  color: var(--chrome-muted);
+  font: inherit;
+  font-size: 19px;
+  cursor: pointer;
+}
+.profile-reveal-btn:hover {
+  color: var(--chrome-text);
+  background: rgba(255,255,255,.055);
+}
+.workspace-reveal-menu {
+  position: relative;
+  z-index: 20;
+  width: fit-content;
+  margin: -4px auto 10px;
+  padding: 7px;
+  border: 1px solid var(--chrome-border);
+  border-radius: 12px;
+  background: var(--chrome-bg);
+  box-shadow: 0 12px 30px rgba(0,0,0,.24);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+.workspace-reveal-menu button {
+  border: 0;
+  border-radius: 9px;
+  padding: 8px 12px;
+  margin: 2px;
+  background: transparent;
+  color: var(--chrome-text);
+  cursor: pointer;
+}
+.workspace-reveal-menu button:hover {
+  background: var(--chrome-active);
+}
+
+/* V6.4 – safe cloud sync */
+.cloud-quick-btn{min-width:42px;font-size:15px;letter-spacing:-1px}
+.cloud-quick-btn[data-state="ok"]{box-shadow:0 0 0 1px rgba(74,190,135,.18),0 8px 24px rgba(0,0,0,.16)}
+.cloud-quick-btn[data-state="stale"],.cloud-quick-btn[data-state="offline"]{box-shadow:0 0 0 1px rgba(225,157,70,.22),0 8px 24px rgba(0,0,0,.16)}
+.cloud-quick-btn.spinning{animation:cloudPulse .8s ease-in-out infinite alternate}
+@keyframes cloudPulse{from{opacity:.55;transform:translateY(0)}to{opacity:1;transform:translateY(-1px)}}
